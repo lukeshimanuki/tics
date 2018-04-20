@@ -41,13 +41,13 @@ class MainWidget(BaseWidget) :
 		self.input.on_key_up(keycode)
 
 	def on_touch_move(self, touch):
-		self.input.on_touch_move(self, touch)
+		self.input.on_touch_move(touch)
 
 	def on_touch_down(self, touch):
-		self.input.on_touch_down(self, touch)
+		self.input.on_touch_down(touch)
 
 	def on_touch_up(self, touch):
-		self.input.on_touch_up(self, touch)
+		self.input.on_touch_up(touch)
 
 	def on_update(self) :
 		# TODO: update transformation if window resized
