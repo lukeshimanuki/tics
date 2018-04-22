@@ -128,7 +128,39 @@ class VisualNote(InstructionGroup):
         self.time += dt
         self.color.v = self.color_anim.eval(self.time)
 
-class Output(AnimGroup):
+class Checkbox(InstructionGroup):
+    def __init__(self, pos, size):
+        super(Checkbox, self).__init__()
+        self.add(Color(0, 0, 0))
+        self.add(Line(points=(pos[0]-size[0]/2, pos[1]-size[1]/2,
+                              pos[0]+size[0]/2, pos[1]-size[1]/2,
+                              pos[0]+size[0]/2, pos[1]+size[1]/2,
+                              pos[0]-size[0]/2, pos[1]+size[1]/2),
+                      close=True))
+        self.check_color = Color(0, 0, 0)
+        self.add(self.check_color)
+        self.add(Line(points=(pos[0]-size[0]/2, pos[1]-size[1]/2,
+                              pos[0]+size[0]/2, pos[1]+size[1]/2)))
+        self.add(Line(points=(pos[0]-size[0]/2, pos[1]+size[1]/2,
+                              pos[0]+size[0]/2, pos[1]-size[1]/2)))
+        self.set(False)
+
+    def set(self, value):
+        self.check_color.a = int(value)
+
+class PartSelector(InstructionGroup):
+    def __init__(self, pos):
+        super(PartSelector, self).__init__()
+        self.checkboxes = {}
+        for p, h in zip(['s', 'a', 't', 'b', 'key', 'chord'], [200, 160, 120, 80, 40, 0]):
+            self.checkboxes[p] = Checkbox((pos[0], pos[1] + h), (20, 20))
+            self.add(self.checkboxes[p])
+
+    def set(self, values):
+        for p, v in values.iteritems():
+            self.checkboxes[p].set(v)
+
+class UI(AnimGroup):
 
     # Associate voices with colors and stem directions.
     voice_info = [('s', (1, 0, 0), 'up'),
@@ -136,10 +168,11 @@ class Output(AnimGroup):
                   ('t', (0, 1, 0), 'up'),
                   ('b', (0, 0, 1), 'down')]
 
-    def __init__(self, data):
-        super(Output, self).__init__()
+    def __init__(self, data, input):
+        super(UI, self).__init__()
 
         self.data = data
+        self.input = input
 
         self.audio = Audio(2)
         self.synth = Synth('data/FluidR3_GM.sf2')
@@ -158,6 +191,9 @@ class Output(AnimGroup):
         self.staff = Staff((200, 300), (400, 100), -1)
         self.add(self.staff)
 
+        self.part_selector = PartSelector((150, 220))
+        self.add(self.part_selector)
+
         # TODO: This is sample data, remove it.
         data = [{'s': 67, 'a': 64, 't': 60, 'b': 53},
                 {'s': 67, 'a': 62, 't': 59, 'b': 53},
@@ -168,6 +204,7 @@ class Output(AnimGroup):
                     self.staff.add_note(VisualNote(self.staff, (i * 90, 0), beat[voice], 5.0, color, stem_direction))
 
     def on_update(self, dt):
-        super(Output, self).on_update(dt)
+        super(UI, self).on_update(dt)
+        self.part_selector.set(self.input.selected_parts)
         self.audio.on_update()
 
