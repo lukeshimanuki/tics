@@ -181,7 +181,7 @@ class UI(BoxLayout):
         for i, beat in enumerate(data):
             for (voice, color, stem_direction) in self.voice_info:
                 if voice in beat:
-                    self.staff.add_note(i, beat[voice], color, stem_direction)
+                    pass#self.staff.add_note(i, beat[voice], color, stem_direction)
 
     def on_beat(self, tick):
         pass#print(tick)

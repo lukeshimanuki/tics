@@ -31,8 +31,6 @@ class MainWidget(BaseWidget):
 
         # Add an initial chord
         self.data.append({'s': 71, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0})
-        for i in range(2): # Autocomplete needs at least 3 beats to "find a path"
-            self.data.append({})
 
         self.input = Input(self.data)
         layout = FloatLayout(size=Window.size)
@@ -52,23 +50,23 @@ class MainWidget(BaseWidget):
         self.sched.set_generator(self.synth)
         self.sched.post_at_tick(480 * 4, self.on_beat)
 
-        self.current_beat_index = 0
+        self.current_beat_index = -1
         self.needs_autocomplete_update = True
 
-    def play_current_beat(self):
+    def play_next_beat(self):
         # Stop playing the previous beat
         if self.current_beat_index > 0:
-            last_beat = self.data[self.current_beat_index - 1]
+            current_beat = self.data[self.current_beat_index]
             for part in 'satb':
-                self.synth.noteoff(0, last_beat[part])
+                self.synth.noteoff(0, current_beat[part])
 
         # Start playing the current beat
-        current_beat = self.data[self.current_beat_index]
+        next_beat = self.data[self.current_beat_index + 1]
         for part in 'satb':
-            self.synth.noteon(0, current_beat[part], 100)  
+            self.synth.noteon(0, next_beat[part], 100)  
 
     def on_beat(self, tick, _ = None):
-        self.play_current_beat()
+        self.play_next_beat()
         self.ui.on_beat(tick)
         self.sched.post_at_tick(tick + 480 * 4, self.on_beat)
         self.data.append({})
@@ -93,6 +91,11 @@ class MainWidget(BaseWidget):
         return True
 
     def autocomplete_beat(self, beat_index):
+        # Pad data with empty beats
+        while len(self.data) < beat_index + 2:
+            self.data.append({})
+
+        # Don't autocomplete if beat is already filled in
         if self.beat_is_filled(beat_index):
             return
 
@@ -105,10 +108,21 @@ class MainWidget(BaseWidget):
         self.audio.on_update()
         self.ui.on_update()
 
+        # Draw notes on the staff
+        for i in range(len(self.ui.staff.notes) / 4, self.current_beat_index + 1):
+            beat = self.data[i]
+            for (voice, color, stem_direction) in self.ui.voice_info:
+                if voice in beat:
+                    self.ui.staff.add_note(i, beat[voice], color, stem_direction) 
+
         if self.needs_autocomplete_update:
-            self.autocomplete_beat(self.current_beat_index)
+            # Autocomplete next beat
+            self.autocomplete_beat(self.current_beat_index + 1)
             self.needs_autocomplete_update = False
 
+            
+
+            # Debugging [REMOVE THIS]
             for beat in self.data:
                 print beat
 
