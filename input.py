@@ -5,9 +5,6 @@ class Input(InstructionGroup):
         super(Input, self).__init__()
 
         self.data = data
-        # What information is the user currently filling in?
-        self.selected_parts = {'s': False, 't': False, 'a': False, 'b': False,
-                               'chord': False, 'key': False}
 
     def on_key_down(self, keycode, modifiers):
         pass

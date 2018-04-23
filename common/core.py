@@ -13,12 +13,12 @@
 import kivy
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.uix.widget import Widget
+from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 import traceback
 
 
-class BaseWidget(Widget):
+class BaseWidget(FloatLayout):
     """Has some common core functionality we want in all
     our apps - handling key up/down, closing the app, and update on every frame.
     The subclass of BaseWidget can optionally define these methods, which will

@@ -2,16 +2,15 @@ from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Rectangle, Mesh, Line
 from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.core.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.checkbox import CheckBox
 
 from common.core import *
-from common.audio import Audio
-from common.synth import Synth
-from common.clock import SimpleTempoMap, AudioScheduler
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
 
-# TODO: Barlines, stems, standard accidentals, bass clef. Move more stuff into
-# Staff (i.e. vertical and horizontal positioning, probably insantiation of
-# VisualNotes).
+# TODO: Barlines, stems, standard accidentals, bass clef.
 
 def pitch_to_staff(pitch, accidental_type=1):
     # Convert a pitch to a height in treble cleff. E4 is 0, as it corresponds
@@ -25,30 +24,42 @@ def pitch_to_staff(pitch, accidental_type=1):
     else: # Return a sharp/flat.
         return (octave * 7 + naturals.index(offset-accidental_type) - 37, accidental_type)
 
-class Staff(AnimGroup):
-    def __init__(self, pos, size, accidental_type):
-        super(Staff, self).__init__()
-        self.pos = pos
-        self.spacing = size[1] / 10
-        self.size = size
+class Staff(Widget):
+    def __init__(self, accidental_type=-1, *args, **kwargs):
+        super(Staff, self).__init__(*args, **kwargs)
         self.accidental_type = accidental_type
-        for i in range(5):
-            height = pos[1] + i * size[1] / 5
-            self.add(Line(points=(pos[0], height, pos[0] + size[0], height)))
-        self.add(CRectangle(cpos=(pos[0] + size[0] / 10, pos[1] + self.spacing * 3.5), size=(self.spacing * 5, self.spacing * 12), texture=Image('data/treble.png').texture))
-        self.add(PushMatrix())
-        self.translation = Translate(self.pos[0] + self.size[0] * 0.25, self.pos[1])
-        self.add(self.translation)
-        self.moving_objects = AnimGroup()
-        self.add(self.moving_objects)
-        self.add(PopMatrix())
+        self.notes = []
+        self.objects = InstructionGroup()
+        self.canvas.add(self.objects)
+        self.draw()
+        self.bind(pos=self.draw, size=self.draw)
 
-    def add_note(self, note):
-        self.moving_objects.add(note)
+    def draw(self, a=None, b=None):
+        self.objects.clear()
+        self.spacing = self.size[1] / 10.0
+        for i in range(5):
+            height = 0 + i * self.size[1] / 5.0
+            self.objects.add(Line(points=(0, height, self.size[0], height)))
+        self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 3.5),
+                                    size=(self.spacing * 5, self.spacing * 12),
+                                    texture=Image('data/treble.png').texture))
+        self.objects.add(PushMatrix())
+        # TODO: Make the x-component based on the current time.
+        self.translation = Translate(self.size[0] * 0.25, 0)
+        self.objects.add(self.translation)
+        self.moving_objects = AnimGroup()
+        for (beat, pitch, color, stem_direction) in self.notes:
+            self.moving_objects.add(VisualNote(self, (beat * 90, 0), pitch, 5.0, color, stem_direction))
+        self.objects.add(self.moving_objects)
+        self.objects.add(PopMatrix())
+
+    def add_note(self, beat, pitch, color, stem_direction):
+        self.notes.append((beat, pitch, color, stem_direction))
+        self.moving_objects.add(VisualNote(self, (beat * 90, 0), pitch, 5.0, color, stem_direction))
 
     def on_update(self, dt):
-        super(Staff, self).on_update(dt)
-        #self.translation.x -= dt * 100
+        self.moving_objects.on_update()
+        pass # self.translation.x -= dt * 100
 
 
 # Alternate animation class that loops rather than becoming inactive.
@@ -85,7 +96,7 @@ class VisualNote(InstructionGroup):
         self.add(self.translation)
 
         # Add ledger lines, if necessary.
-        self.add(Color(0, 0, 0))
+        self.add(Color(1, 1, 1))
         lines = []
         if line < 0:
             lines = range(line, 0)
@@ -128,39 +139,17 @@ class VisualNote(InstructionGroup):
         self.time += dt
         self.color.v = self.color_anim.eval(self.time)
 
-class Checkbox(InstructionGroup):
-    def __init__(self, pos, size):
-        super(Checkbox, self).__init__()
-        self.add(Color(0, 0, 0))
-        self.add(Line(points=(pos[0]-size[0]/2, pos[1]-size[1]/2,
-                              pos[0]+size[0]/2, pos[1]-size[1]/2,
-                              pos[0]+size[0]/2, pos[1]+size[1]/2,
-                              pos[0]-size[0]/2, pos[1]+size[1]/2),
-                      close=True))
-        self.check_color = Color(0, 0, 0)
-        self.add(self.check_color)
-        self.add(Line(points=(pos[0]-size[0]/2, pos[1]-size[1]/2,
-                              pos[0]+size[0]/2, pos[1]+size[1]/2)))
-        self.add(Line(points=(pos[0]-size[0]/2, pos[1]+size[1]/2,
-                              pos[0]+size[0]/2, pos[1]-size[1]/2)))
-        self.set(False)
 
-    def set(self, value):
-        self.check_color.a = int(value)
-
-class PartSelector(InstructionGroup):
-    def __init__(self, pos):
-        super(PartSelector, self).__init__()
+class PartSelector(BoxLayout):
+    def __init__(self, *args, **kwargs):
+        super(PartSelector, self).__init__(*args, orientation='vertical', **kwargs)
         self.checkboxes = {}
-        for p, h in zip(['s', 'a', 't', 'b', 'key', 'chord'], [200, 160, 120, 80, 40, 0]):
-            self.checkboxes[p] = Checkbox((pos[0], pos[1] + h), (20, 20))
-            self.add(self.checkboxes[p])
+        for p in ['s', 'a', 't', 'b', 'key', 'chord']:
+            self.checkboxes[p] = CheckBox()
+            self.add_widget(self.checkboxes[p])
 
-    def set(self, values):
-        for p, v in values.iteritems():
-            self.checkboxes[p].set(v)
 
-class UI(AnimGroup):
+class UI(BoxLayout):
 
     # Associate voices with colors and stem directions.
     voice_info = [('s', (1, 0, 0), 'up'),
@@ -168,32 +157,23 @@ class UI(AnimGroup):
                   ('t', (0, 1, 0), 'up'),
                   ('b', (0, 0, 1), 'down')]
 
-    def __init__(self, data, input):
-        super(UI, self).__init__()
+    def __init__(self, data, input, *args, **kwargs):
+        super(UI, self).__init__(*args, orientation='horizontal', **kwargs)
 
         self.data = data
         self.input = input
 
-        self.audio = Audio(2)
-        self.synth = Synth('data/FluidR3_GM.sf2')
+        self.part_selector = PartSelector(pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
+        self.add_widget(self.part_selector)
 
-        # create TempoMap, AudioScheduler
-        self.tempo_map  = SimpleTempoMap(120)
-        self.sched = AudioScheduler(self.tempo_map)
+        self.staff = Staff(accidental_direction=-1, pos_hint={'center_x': 0.5}, size_hint=(.8, 1.))
+        layout = RelativeLayout(pos_hint={'center_y': 0.5}, size_hint=(.8, .2))
+        layout.add_widget(self.staff)
+        self.add_widget(layout)
+        self.bind(pos=self.draw, size=self.draw)
+        self.draw()
 
-        # connect scheduler into audio system
-        self.audio.set_generator(self.sched)
-        self.sched.set_generator(self.synth)
-
-        self.add(Color(1, 1, 1))
-        self.add(Rectangle(pos=(0, 0), size=Window.size))
-        self.add(Color(0, 0, 0))
-        self.staff = Staff((200, 300), (400, 100), -1)
-        self.add(self.staff)
-
-        self.part_selector = PartSelector((150, 220))
-        self.add(self.part_selector)
-
+    def draw(self, a=None, b=None):
         # TODO: This is sample data, remove it.
         data = [{'s': 67, 'a': 64, 't': 60, 'b': 53},
                 {'s': 67, 'a': 62, 't': 59, 'b': 53},
@@ -201,10 +181,11 @@ class UI(AnimGroup):
         for i, beat in enumerate(data):
             for (voice, color, stem_direction) in self.voice_info:
                 if voice in beat:
-                    self.staff.add_note(VisualNote(self.staff, (i * 90, 0), beat[voice], 5.0, color, stem_direction))
+                    self.staff.add_note(i, beat[voice], color, stem_direction)
 
-    def on_update(self, dt):
-        super(UI, self).on_update(dt)
-        self.part_selector.set(self.input.selected_parts)
-        self.audio.on_update()
+    def on_beat(self, tick):
+        print(tick)
+
+    def on_update(self):
+        self.staff.on_update(kivy.clock.Clock.frametime)
 
