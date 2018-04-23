@@ -184,7 +184,7 @@ class UI(BoxLayout):
                     self.staff.add_note(i, beat[voice], color, stem_direction)
 
     def on_beat(self, tick):
-        print(tick)
+        pass#print(tick)
 
     def on_update(self):
         self.staff.on_update(kivy.clock.Clock.frametime)
