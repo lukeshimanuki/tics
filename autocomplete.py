@@ -105,7 +105,13 @@ def voicing_line_cost(prev, this):
 	diff = abs(prev - this)
 	cost = 0
 	if diff in [6, 10, 11]:
+		cost += 2
+	if diff > 0: # prefer common-tone
 		cost += 1
+	if diff > 1: # prefer half-steps
+		cost += 1
+	if cost > 3: # avoid leaps
+		cost += 3
 	cost += diff * .1
 	return cost
 

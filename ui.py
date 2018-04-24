@@ -58,13 +58,14 @@ class Staff(Widget):
         self.objects.add(PopMatrix())
 
     def add_note(self, beat, pitch, color, stem_direction):
+        relative_beat = beat - self.beat + self.display_history - 1
         self.notes.append((beat, pitch, color, stem_direction))
-        self.moving_objects.add(VisualNote(self, (beat * 90, 0), pitch, 5.0, color, stem_direction))
+        self.moving_objects.add(VisualNote(self, (relative_beat * 90, 0), pitch, 5.0, color, stem_direction))
 
     def on_update(self, dt):
-        self.moving_objects.on_update()
+        #self.moving_objects.on_update()
         pass # self.translation.x -= dt * 100
-        self.draw()
+        #self.draw()
 
 
 # Alternate animation class that loops rather than becoming inactive.
