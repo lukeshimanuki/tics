@@ -64,8 +64,60 @@ def softmax(x):
     r=np.exp(x - np.max(x))
     return r/r.sum(axis=0)
 
+def voicing_line_cost(prev, this):
+	diff = abs(prev - this)
+	cost = 0
+	if diff in [6, 10, 11]:
+		cost += 1
+	cost += diff * .1
+	return cost
+
+def voicing_spacing_cost(chord):
+	for i in 'satb':
+		if i not in chord:
+			return 0
+	cost = 0
+	s,a,t,b = [chord[i] for i in 'satb']
+	if s - a > 12:
+		cost += 1
+	if a - t > 12:
+		cost += 1
+	if a >= s:
+		cost += 1
+	if t >= a:
+		cost += 1
+	if b >= t:
+		cost += 1
+	return cost
+
+def voicing_parallel_intervals_cost(prev, this):
+	for i in 'satb':
+		if i not in this or i not in prev:
+			return 0
+	cost = 0
+	for i in 'satb':
+		for j in 'satb':
+			if i != j:
+				if this[i] - prev[i] == this[j] - prev[j]:
+					if (this[i] - this[j]) % 12 in [7, 0]:
+						cost += 10
+	return cost
+
 def voicing_cost(prev, this, next):
-	return 1
+	return sum([
+		voicing_line_cost(prev[i], this[i])
+		for i in 'satb'
+		if i in prev
+		and i in this
+	] + [
+		voicing_line_cost(this[i], next[i])
+		for i in 'satb'
+		if i in this
+		and i in next
+	] + [
+		voicing_spacing_cost(this),
+		voicing_parallel_intervals_cost(prev, this),
+	]) * 5
 
 def enumerate_notes(prev, next, key, chord):
 	return [
@@ -74,7 +126,12 @@ def enumerate_notes(prev, next, key, chord):
 			'a': a,
 			't': t,
 			'b': b,
-		}, voicing_cost(prev, notes, next))
+		}, voicing_cost(prev, {
+			's': s,
+			'a': a,
+			't': t,
+			'b': b,
+		}, next))
 		for s in ranges['s']
 		for a in ranges['a']
 		for t in ranges['t']
