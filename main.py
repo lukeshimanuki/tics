@@ -27,10 +27,10 @@ class MainWidget(BaseWidget):
         # - harmony, or chord (in relation to the key)
         # - key
         # this reference should never change
-        self.data = []
+        self.data = [{}, {}, {}, {}, {}]
 
         # Add an initial chord
-        self.data.append({'s': 71, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0})
+        self.data[0] = {'s': 71, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0}
 
         self.input = Input(self.data)
         layout = FloatLayout(size=Window.size)
@@ -42,7 +42,7 @@ class MainWidget(BaseWidget):
         self.synth = Synth('data/FluidR3_GM.sf2')
 
         # create TempoMap, AudioScheduler
-        self.tempo_map  = SimpleTempoMap(120)
+        self.tempo_map  = SimpleTempoMap(480)
         self.sched = AudioScheduler(self.tempo_map)
 
         # connect scheduler into audio system
@@ -100,7 +100,7 @@ class MainWidget(BaseWidget):
             return
 
         # Fill in beat based on the beats immediately before & after
-        partial_data = copy.deepcopy(self.data[beat_index - 1 : beat_index + 2])
+        partial_data = copy.deepcopy(self.data[beat_index - 1 :])
         filled_data = autocomplete(partial_data)
         self.data[beat_index] = filled_data[1]
 
@@ -114,13 +114,12 @@ class MainWidget(BaseWidget):
             for (voice, color, stem_direction) in self.ui.voice_info:
                 if voice in beat:
                     self.ui.staff.add_note(i, beat[voice], color, stem_direction) 
+        self.ui.staff.beat = self.current_beat_index
 
         if self.needs_autocomplete_update:
             # Autocomplete next beat
             self.autocomplete_beat(self.current_beat_index + 1)
             self.needs_autocomplete_update = False
-
-            
 
             # Debugging [REMOVE THIS]
             for beat in self.data:

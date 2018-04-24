@@ -33,6 +33,8 @@ class Staff(Widget):
         self.canvas.add(self.objects)
         self.draw()
         self.bind(pos=self.draw, size=self.draw)
+        self.beat = 0
+        self.display_history = 3
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -49,7 +51,9 @@ class Staff(Widget):
         self.objects.add(self.translation)
         self.moving_objects = AnimGroup()
         for (beat, pitch, color, stem_direction) in self.notes:
-            self.moving_objects.add(VisualNote(self, (beat * 90, 0), pitch, 5.0, color, stem_direction))
+            relative_beat = beat - self.beat + self.display_history - 1
+            if relative_beat >= 0:
+                self.moving_objects.add(VisualNote(self, (relative_beat * 90, 0), pitch, 5.0, color, stem_direction))
         self.objects.add(self.moving_objects)
         self.objects.add(PopMatrix())
 
@@ -60,6 +64,7 @@ class Staff(Widget):
     def on_update(self, dt):
         self.moving_objects.on_update()
         pass # self.translation.x -= dt * 100
+        self.draw()
 
 
 # Alternate animation class that loops rather than becoming inactive.
