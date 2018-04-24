@@ -15,7 +15,6 @@ transitions = {
 		(0, 'V/IV'): 1,
 		(0, 'V/V'): 1,
 		(0, 'V/vi'): 1,
-		(0, 'V/vii'): 1,
 
 		(5, 'iii'): 1, # modulate to IV
 		(7, 'ii'): 1, # modulate to V
@@ -56,9 +55,6 @@ transitions = {
 	'V/vi': {
 		(0, 'vi'): 1,
 	},
-	'V/vii': {
-		(0, 'vii'): 1,
-	},
 }
 
 notes = {
@@ -74,7 +70,6 @@ notes = {
 	'V/IV': {0, 4, 7},
 	'V/V': {2, 6, 9},
 	'V/vi': {4, 8, 11},
-	'V/vii': {5, 9, 0},
 }
 
 ranges = {
