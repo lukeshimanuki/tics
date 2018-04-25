@@ -5,8 +5,8 @@ class Input(InstructionGroup):
     def __init__(self, on_beat_update_callback=lambda beat : None):
         super(Input, self).__init__()
 
-        self.parts_enabled = {'s' : False, 'a' : False, 't' : False, 'b' : False, 'chord' : False, 'key' : False}
-        self.input_notes = []
+        self.parts_enabled = set()
+        self.input_notes = set()
         self.beat = {}
         self.beat_needs_update = False
         self.on_beat_update = on_beat_update_callback
@@ -17,35 +17,91 @@ class Input(InstructionGroup):
         self.beat_needs_update = True
 
     def set_part_enabled(self, part, enabled):
-        self.parts_enabled[part] = enabled
+        if enabled and part not in self.parts_enabled:
+            self.parts_enabled.add(part)
+        elif not enabled and part in self.parts_enabled:
+            self.parts_enabled.remove(part)
 
     # Number of enabled note parts (i.e. 's', 'a', 't', 'b')
     def num_input_note_parts(self):
-        return len([part for part in 'satb' if self.parts_enabled[part]])
+        return len([part for part in 'satb' if part in self.parts_enabled])
 
     # TODO: Handle input from MIDI keyboard
     def on_key_down(self, keycode, modifiers):
-        midi_value = keycode[0] # This will do for now
-        midi_value = lookup(keycode[1], 'asdfghjkl', [60, 62, 64, 65, 67, 69, 71, 72, 74])
-        self.on_midi_input(midi_value)
+        midi_value = lookup(keycode[1], '123456789', [60, 62, 64, 65, 67, 69, 71, 72, 74])
+        self.on_midi_down(midi_value)
 
     # TODO: Handle input from MIDI keyboard
     def on_key_up(self, keycode):
-        pass
+        midi_value = lookup(keycode[1], '123456789', [60, 62, 64, 65, 67, 69, 71, 72, 74])
+        self.on_midi_up(midi_value)
 
-    def on_midi_input(self, midi_value):
+    def on_midi_down(self, midi_value):
         if midi_value not in self.input_notes:
-            self.input_notes.append(midi_value)
+            self.input_notes.add(midi_value)
             self.beat_needs_update = True
 
+    def on_midi_up(self, midi_value):
+        if midi_value in self.input_notes:
+            self.input_notes.remove(midi_value)
+
     def populate_beat_with_notes(self, notes):
+        self.beat = {}
+
         sorted_notes = sorted(notes, reverse=True)
 
         # Assign notes for parts in descending order
-        active_note_parts = [part for part in 'satb' if self.parts_enabled[part]]
+        active_note_parts = [part for part in 'satb' if part in self.parts_enabled]
         for index, part in enumerate(active_note_parts):
-            if index < len(sorted_notes):
-                self.beat[part] = sorted_notes[index]
+            self.beat[part] = sorted_notes[index]
+
+        sorted_notes = sorted_notes[len(active_note_parts):]
+
+        # TODO: somehow allow minor keys?
+        if 'key' in self.parts_enabled:
+            self.beat['key'] = sorted_notes[-1] % 12
+            sorted_notes = sorted_notes[:-1]
+
+        if 'chord' in self.parts_enabled:
+            # sort in increasing order
+            sorted_notes = sorted_notes[::-1]
+            # only take bottom 2
+            if len(sorted_notes) > 2:
+                sorted_notes = sorted_notes[:2]
+            # take relative to key
+            key = 0 # todo fix this
+            sorted_notes = [
+                (note - key) % 12
+                for note in sorted_notes
+            ]
+            # if single note, assume diatonic chord
+            chord_mapping = [
+                'I',
+                'I',
+                'ii',
+                'I',
+                'iii',
+                'IV',
+                'I',
+                'V',
+                'I',
+                'vi',
+                'I',
+                'vii',
+            ]
+            if len(sorted_notes) == 1:
+                self.beat['chord'] = chord_mapping[sorted_notes[0]]
+            elif (sorted_notes[1] - sorted_notes[0]) % 12 == 7:
+                base_tone = chord_mapping[sorted_notes[0]]
+                if base_tone in ['ii', 'IV', 'V', 'vi']:
+                    self.beat['chord'] = 'V/' + base_tone
+                else:
+                    self.beat['chord'] = 'I'
+            else:
+                self.beat['chord'] = 'I'
+
+        print(self.beat)
+
 
     def set_beat_chord(self, chord):
         self.beat['chord'] = chord
@@ -61,11 +117,12 @@ class Input(InstructionGroup):
             self.input_notes = self.input_notes[-self.num_input_note_parts():]
 
     def update_beat(self):
-        if self.beat_needs_update:
+        if self.beat_needs_update and len(self.input_notes) >= len(self.parts_enabled):
             self.populate_beat_with_notes(self.input_notes)
             self.on_beat_update(self.beat)
             self.beat_needs_update = False
 
     def on_update(self):
-        self.update_input_notes()
+        #self.update_input_notes()
         self.update_beat()
+

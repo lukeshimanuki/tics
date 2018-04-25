@@ -34,7 +34,7 @@ class Staff(Widget):
         self.draw()
         self.bind(pos=self.draw, size=self.draw)
         self.beat = 0
-        self.display_history = 4
+        self.display_history = 1
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -152,7 +152,7 @@ class PartSelector(BoxLayout):
 
         self.set_part_active = set_part_active_callback
         self.checkboxes = {}
-        for p in ['s', 'a', 't', 'b', 'key', 'chord']:
+        for p in ['s', 'a', 't', 'b', 'chord', 'key']:
             checkbox = CheckBox()
             checkbox.bind(active=self.on_checkbox_toggled)
             self.checkboxes[p] = checkbox
@@ -160,7 +160,7 @@ class PartSelector(BoxLayout):
 
     def on_checkbox_toggled(self, checkbox, value):
         checkbox_active = value
-        for part in ['s', 'a', 't', 'b', 'key', 'chord']:
+        for part in ['s', 'a', 't', 'b', 'chord', 'key']:
             if self.checkboxes[part] == checkbox:
                 self.set_part_active(part, checkbox_active)
 
