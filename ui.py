@@ -34,7 +34,7 @@ class Staff(Widget):
         self.draw()
         self.bind(pos=self.draw, size=self.draw)
         self.beat = 0
-        self.display_history = 3
+        self.display_history = 4
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -147,13 +147,22 @@ class VisualNote(InstructionGroup):
 
 
 class PartSelector(BoxLayout):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, set_part_active_callback, *args, **kwargs):
         super(PartSelector, self).__init__(*args, orientation='vertical', **kwargs)
+
+        self.set_part_active = set_part_active_callback
         self.checkboxes = {}
         for p in ['s', 'a', 't', 'b', 'key', 'chord']:
-            self.checkboxes[p] = CheckBox()
+            checkbox = CheckBox()
+            checkbox.bind(active=self.on_checkbox_toggled)
+            self.checkboxes[p] = checkbox
             self.add_widget(self.checkboxes[p])
 
+    def on_checkbox_toggled(self, checkbox, value):
+        checkbox_active = value
+        for part in ['s', 'a', 't', 'b', 'key', 'chord']:
+            if self.checkboxes[part] == checkbox:
+                self.set_part_active(part, checkbox_active)
 
 class UI(BoxLayout):
 
@@ -169,7 +178,7 @@ class UI(BoxLayout):
         self.data = data
         self.input = input
 
-        self.part_selector = PartSelector(pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
+        self.part_selector = PartSelector(self.set_part_active, pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
         self.add_widget(self.part_selector)
 
         self.staff = Staff(accidental_direction=-1, pos_hint={'center_x': 0.5}, size_hint=(.8, 1.))
@@ -178,6 +187,9 @@ class UI(BoxLayout):
         self.add_widget(layout)
         self.bind(pos=self.draw, size=self.draw)
         self.draw()
+
+    def set_part_active(self, part, active):
+        self.input.set_part_enabled(part, active)
 
     def draw(self, a=None, b=None):
         # TODO: This is sample data, remove it.

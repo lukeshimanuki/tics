@@ -34,7 +34,7 @@ class MainWidget(BaseWidget):
         # Add an initial chord
         self.data.append({'s': 72, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0})
 
-        self.input = Input(self.data)
+        self.input = Input(self.on_beat_update_from_input)
         layout = FloatLayout(size=Window.size)
         self.add_widget(layout)
         self.ui = UI(self.data, self.input)
@@ -59,6 +59,12 @@ class MainWidget(BaseWidget):
         self.current_played_notes = []
 
         self.autocomplete_data = multiprocessing.Queue()
+
+    def on_beat_update_from_input(self, beat):
+        pass
+        # print beat
+        # TODO: get whatever beat index is selected by UI 
+        #       and set that beat to the given one
 
     def play_next_beat(self):
         # Stop playing the previous beat
@@ -124,6 +130,7 @@ class MainWidget(BaseWidget):
 
     def on_update(self):
         self.audio.on_update()
+        self.input.on_update()
         self.ui.on_update()
 
         # Draw notes on the staff
