@@ -9,6 +9,7 @@ from kivy.uix.checkbox import CheckBox
 
 from common.core import *
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
+from common.gfxutil import topleft_label
 
 # TODO: Barlines, stems, standard accidentals, bass clef.
 
@@ -188,7 +189,10 @@ class UI(BoxLayout):
         self.bind(pos=self.draw, size=self.draw)
         self.draw()
 
-        self.selected_beat = 1
+        self.info = topleft_label()
+        layout.add_widget(self.info)
+
+        self.selected_beat = 0
 
     def set_part_active(self, part, active):
         self.input.set_part_enabled(part, active)
@@ -208,4 +212,31 @@ class UI(BoxLayout):
 
     def on_update(self):
         self.staff.on_update(kivy.clock.Clock.frametime)
+
+        key_mapping = [
+            'C',
+            'C#',
+            'D',
+            'Eb',
+            'E',
+            'F',
+            'F#',
+            'G',
+            'Ab',
+            'A',
+            'Bb',
+            'B',
+            'C',
+        ]
+
+        self.info.text = "Selected Beat: {}\nHarmonies:\n{}".format(self.selected_beat + 1,
+            '\n'.join([
+                "{}: {} {}".format(
+                    i,
+                    key_mapping[beat['key']] if 'key' in beat else '',
+                    beat['chord'] if 'chord' in beat else '',
+                )
+                for i, beat in enumerate(self.data[self.staff.beat + 1:])
+            ])
+        )
 

@@ -18,7 +18,7 @@ from input import Input
 from ui import UI
 from autocomplete import autocomplete
 
-PADDING = 4
+PADDING = 8
 
 class BeatManager:
     def __init__(self, tempo=80, on_beat_callback=lambda : None):
@@ -119,7 +119,7 @@ class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
 
-        self.beat_manager = BeatManager(tempo=30, on_beat_callback=self.on_beat)
+        self.beat_manager = BeatManager(tempo=60, on_beat_callback=self.on_beat)
         self.input = Input(self.update_beat_from_input)
 
         # Draw the UI
@@ -144,7 +144,7 @@ class MainWidget(BaseWidget):
         self.draw_beats_on_staff()
         
     def update_beat_from_input(self, beat):
-        selected_beat_index = self.beat_manager.current_beat_index + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
+        selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
         self.beat_manager.data[selected_beat_index].update(beat)
         print("{}: {}".format(selected_beat_index, beat))
         for (voice, color, stem_direction) in self.ui.voice_info:
@@ -157,7 +157,7 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'left':
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
-            self.ui.selected_beat = min(self.ui.selected_beat + 1, PADDING - 1)
+            self.ui.selected_beat = min(self.ui.selected_beat + 1, PADDING - 2)
 
     def on_key_up(self, keycode):
         self.input.on_key_up(keycode)

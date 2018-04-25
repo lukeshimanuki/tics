@@ -186,7 +186,6 @@ def enumerate_notes(prev, next, key, chord):
 	]
 
 def autocomplete(data):
-	print(data)
 	# find path in key/chord graph
 	paths, costs = zip(*enumerate_paths(data, 0, data[0]['key'], data[0]['chord']))
 	np_costs = np.array(costs)
