@@ -18,6 +18,8 @@ from input import Input
 from ui import UI
 from autocomplete import autocomplete
 
+PADDING = 4
+
 class BeatManager:
     def __init__(self, tempo=80, on_beat_callback=lambda : None):
 
@@ -90,7 +92,7 @@ class BeatManager:
 
     def autocomplete_beat(self, beat_index):
         # Pad data with empty beats
-        while len(self.data) < beat_index + 4:
+        while len(self.data) < beat_index + PADDING:
             self.data.append({})
 
         # Don't autocomplete if beat is already filled in
@@ -142,7 +144,7 @@ class MainWidget(BaseWidget):
         self.draw_beats_on_staff()
         
     def update_beat_from_input(self, beat):
-        selected_beat_index = self.beat_manager.current_beat_index + 1 # TODO: make this whichever beat index is actually selected by UI 
+        selected_beat_index = self.beat_manager.current_beat_index + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
         self.beat_manager.data[selected_beat_index].update(beat)
         print("{}: {}".format(selected_beat_index, beat))
         for (voice, color, stem_direction) in self.ui.voice_info:
@@ -151,6 +153,11 @@ class MainWidget(BaseWidget):
 
     def on_key_down(self, keycode, modifiers):
         self.input.on_key_down(keycode, modifiers)
+
+        if keycode[1] == 'left':
+            self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
+        if keycode[1] == 'right':
+            self.ui.selected_beat = min(self.ui.selected_beat + 1, PADDING - 1)
 
     def on_key_up(self, keycode):
         self.input.on_key_up(keycode)

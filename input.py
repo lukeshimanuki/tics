@@ -29,12 +29,14 @@ class Input(InstructionGroup):
     # TODO: Handle input from MIDI keyboard
     def on_key_down(self, keycode, modifiers):
         midi_value = lookup(keycode[1], '1234567890', [72, 74, 76, 77, 79, 81, 83, 84, 86, 88])
-        self.on_midi_down(midi_value)
+        if midi_value is not None:
+            self.on_midi_down(midi_value)
 
     # TODO: Handle input from MIDI keyboard
     def on_key_up(self, keycode):
         midi_value = lookup(keycode[1], '1234567890', [72, 74, 76, 77, 79, 81, 83, 84, 86, 88])
-        self.on_midi_up(midi_value)
+        if midi_value is not None:
+            self.on_midi_up(midi_value)
 
     def on_midi_down(self, midi_value):
         if midi_value not in self.input_notes:

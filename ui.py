@@ -188,6 +188,8 @@ class UI(BoxLayout):
         self.bind(pos=self.draw, size=self.draw)
         self.draw()
 
+        self.selected_beat = 1
+
     def set_part_active(self, part, active):
         self.input.set_part_enabled(part, active)
 
