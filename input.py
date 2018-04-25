@@ -1,4 +1,5 @@
 from kivy.graphics.instructions import InstructionGroup
+from common.core import *
 
 class Input(InstructionGroup):
     def __init__(self, on_beat_update_callback=lambda beat : None):
@@ -25,6 +26,7 @@ class Input(InstructionGroup):
     # TODO: Handle input from MIDI keyboard
     def on_key_down(self, keycode, modifiers):
         midi_value = keycode[0] # This will do for now
+        midi_value = lookup(keycode[1], 'asdfghjkl', [60, 62, 64, 65, 67, 69, 71, 72, 74])
         self.on_midi_input(midi_value)
 
     # TODO: Handle input from MIDI keyboard
@@ -67,7 +69,3 @@ class Input(InstructionGroup):
     def on_update(self):
         self.update_input_notes()
         self.update_beat()
-        
-
-
-
