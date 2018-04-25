@@ -19,7 +19,7 @@ from ui import UI
 from autocomplete import autocomplete
 
 class BeatManager:
-    def __init__(self, tempo=80):
+    def __init__(self, tempo=80, on_beat_callback=lambda : None):
 
         # Data structure
         # This data structure describes a partial or full composition
@@ -38,6 +38,7 @@ class BeatManager:
         self.data.append({'s': 72, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0})
 
         # Class variables
+        self.on_beat_callback = on_beat_callback
         self.current_beat_index = 0
         self.needs_autocomplete_update = True
         self.current_playing_notes = set()
@@ -66,6 +67,7 @@ class BeatManager:
     def on_beat(self, tick, _ = None):
         self.play_next_beat()
         self.sched.post_at_tick(tick + 480, self.on_beat)
+        self.on_beat_callback()
         self.current_beat_index += 1
         self.autocomplete_beat(self.current_beat_index)
 
@@ -75,15 +77,17 @@ class BeatManager:
             self.synth.noteoff(channel, note)
         self.current_playing_notes.clear()
 
-        # Start playing notes in the current beat
+        # Start playing notes in the next beat
         next_beat = self.data[self.current_beat_index]
+        print next_beat # [DEBUGGING]
         for part in 'satb':
-            self.synth.noteon(0, next_beat[part], 100)  
-            self.current_playing_notes.add((0, next_beat[part]))
+            if part in next_beat:
+                self.synth.noteon(0, next_beat[part], 100)  
+                self.current_playing_notes.add((0, next_beat[part]))
 
-    def autocomplete_thread(self, beat, data):
+    def autocomplete_thread(self, beat_index, data):
         autocomplete_data = autocomplete(data)[1]
-        self.autocomplete_data.put((beat, autocomplete_data, np.random.get_state()))
+        self.autocomplete_data.put((beat_index, autocomplete_data, np.random.get_state()))
 
     def autocomplete_beat(self, beat_index):
         # Pad data with empty beats
@@ -101,6 +105,7 @@ class BeatManager:
     def on_update(self):
         self.audio.on_update()
 
+        # Fill in any autocompleted beats
         try:
             beat, autocomplete_data, random_state = self.autocomplete_data.get(False)
             np.random.set_state(random_state)
@@ -112,36 +117,17 @@ class BeatManager:
 class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
-        self.beat_manager = BeatManager(tempo=80)
 
-        self.input = Input(self.on_beat_update_from_input)
-        layout = FloatLayout(size=Window.size)
-        self.add_widget(layout)
+        self.beat_manager = BeatManager(tempo=80, on_beat_callback=self.on_beat)
+        self.input = Input(self.update_beat_from_input)
+
+        # Draw the UI
         self.ui = UI(self.beat_manager.data, self.input)
+        layout = FloatLayout(size=Window.size)
         layout.add_widget(self.ui)
+        self.add_widget(layout)
 
-    def on_beat_update_from_input(self, beat):
-        pass
-        # print beat
-        # TODO: get whatever beat index is selected by UI 
-        #       and set that beat to the given one
-
-    def on_key_down(self, keycode, modifiers):
-        self.input.on_key_down(keycode, modifiers)
-        self.needs_autocomplete_update = True
-
-    def on_key_up(self, keycode):
-        self.input.on_key_up(keycode)
-        self.needs_autocomplete_update = True
-
-    def on_touch_down(self, touch):
-        super(MainWidget, self).on_touch_down(touch)
-
-    def on_update(self):
-        self.beat_manager.on_update()
-        self.input.on_update()
-        self.ui.on_update()
-
+    def draw_beats_on_staff(self):
         # Draw notes on the staff
         for i in range(len(self.ui.staff.notes) / 4, self.beat_manager.current_beat_index + 1):
             beat = self.beat_manager.data[i]
@@ -151,6 +137,29 @@ class MainWidget(BaseWidget):
         if self.ui.staff.beat != self.beat_manager.current_beat_index:
             self.ui.staff.beat = self.beat_manager.current_beat_index
             self.ui.staff.draw()
+
+    def on_beat(self):
+        self.input.reset()
+        self.draw_beats_on_staff()
+        
+    def update_beat_from_input(self, beat):
+        selected_beat_index = self.beat_manager.current_beat_index # TODO: make this whichever beat index is actually selected by UI 
+        self.beat_manager.data[selected_beat_index] = beat
+
+    def on_key_down(self, keycode, modifiers):
+        self.input.on_key_down(keycode, modifiers)
+
+    def on_key_up(self, keycode):
+        self.input.on_key_up(keycode)
+
+    def on_touch_down(self, touch):
+        super(MainWidget, self).on_touch_down(touch)
+
+    def on_update(self):
+        self.beat_manager.on_update()
+        self.input.on_update()
+        self.ui.on_update()
+        # self.draw_beats_on_staff()
 
 if __name__ == "__main__":
     run(MainWidget)

@@ -26,7 +26,7 @@ class Input(InstructionGroup):
     # TODO: Handle input from MIDI keyboard
     def on_key_down(self, keycode, modifiers):
         midi_value = keycode[0] # This will do for now
-        midi_value = lookup(keycode[1], 'asdfghjkl', [60, 62, 64, 65, 67, 69, 71, 72, 74])
+        midi_value = lookup(keycode[1], 'asdfghjkl', [72, 74, 76, 77, 79, 81, 83, 84, 86])
         self.on_midi_input(midi_value)
 
     # TODO: Handle input from MIDI keyboard
