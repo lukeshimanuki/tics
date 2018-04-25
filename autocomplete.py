@@ -186,6 +186,7 @@ def enumerate_notes(prev, next, key, chord):
 	]
 
 def autocomplete(data):
+	print(data)
 	# find path in key/chord graph
 	paths, costs = zip(*enumerate_paths(data, 0, data[0]['key'], data[0]['chord']))
 	np_costs = np.array(costs)
@@ -195,8 +196,10 @@ def autocomplete(data):
 
 	# set next key/chord
 	key, chord = path[1]
-	data[1]['key'] = key
-	data[1]['chord'] = chord
+	if 'key' not in data[1]:
+		data[1]['key'] = key
+	if 'chord' not in data[1]:
+		data[1]['chord'] = chord
 
 	# pick notes based on key/chord
 	voicings, costs = zip(*enumerate_notes(data[0], data[2], key, chord))
@@ -206,10 +209,7 @@ def autocomplete(data):
 	voicing = voicings[voicings_idx]
 
 	# set notes
-	data[1]['s'] = voicing['s']
-	data[1]['a'] = voicing['a']
-	data[1]['t'] = voicing['t']
-	data[1]['b'] = voicing['b']
+	data[1] = dict(voicing.items() + data[1].items())
 
 	return data
 
