@@ -11,6 +11,29 @@ class Input(InstructionGroup):
         self.beat_needs_update = False
         self.on_beat_update = on_beat_update_callback
 
+        try:
+            # Attempt to set up MIDI input, if rtmidi is installed.
+            import rtmidi
+            from rtmidi import midiconstants
+            self.midi_in = rtmidi.MidiIn(name='TICS')
+            available_ports = self.midi_in.get_ports()
+            print(available_ports)
+            self.midi_in.open_port(1)
+            print('Opened MIDI port.')
+            self.last_msg = None
+            def midi_callback(msgtime, _ = None):
+                msg, time = msgtime
+                if msg[0] == midiconstants.NOTE_ON and msg[0:2] != self.last_msg:
+                    self.on_midi_down(msg[1])
+                    self.last_msg = msg[0:2]
+                elif msg[0] == midiconstants.NOTE_OFF and msg[0:2] != self.last_msg:
+                    self.on_midi_up(msg[1])
+                    self.last_msg = msg[0:2]
+            self.midi_in.set_callback(midi_callback)
+        except Exception as e:
+            print(e)
+            print('MIDI support disabled.')
+
     def reset(self):
         self.input_notes = set()
         #self.beat = {}
