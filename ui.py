@@ -6,6 +6,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.label import Label
 
 from common.core import *
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
@@ -64,8 +65,8 @@ class Staff(Widget):
         self.moving_objects.add(VisualNote(self, (relative_beat * 90, 0), pitch, 5.0, color, stem_direction))
 
     def on_update(self, dt):
-        #self.moving_objects.on_update()
-        pass # self.translation.x -= dt * 100
+        self.moving_objects.on_update()
+        self.translation.x -= dt * 90.0
         #self.draw()
 
 
@@ -103,7 +104,8 @@ class VisualNote(InstructionGroup):
         self.add(self.translation)
 
         # Add ledger lines, if necessary.
-        self.add(Color(1, 1, 1))
+        self.ledger_color = Color(1, 1, 1)
+        self.add(self.ledger_color)
         lines = []
         if line < 0:
             lines = range(line, 0)
@@ -139,12 +141,19 @@ class VisualNote(InstructionGroup):
         self.add(PopMatrix())
 
         self.time = 0
+        self.start = 0
+        self.pos = pos
         self.on_update(0)
 
     def on_update(self, dt):
         self.notehead.on_update(dt)
         self.time += dt
-        self.color.v = self.color_anim.eval(self.time)
+        if self.pos[0] == 0:
+            if not self.start:
+                self.start = self.time
+            self.color.a = 1.0 - (self.time - self.start) * 0.8
+            self.ledger_color.a = self.color.a
+        #self.color.v = self.color_anim.eval(self.time)
 
 
 class PartSelector(BoxLayout):
@@ -189,7 +198,8 @@ class UI(BoxLayout):
         self.bind(pos=self.draw, size=self.draw)
         self.draw()
 
-        self.info = topleft_label()
+        self.info = Label(text = "text", valign='top', halign='left', font_size='20sp',
+                          size_hint=(1.0, 1.0), pos_hint={'center_x': -0.12, 'y': 1.0})
         layout.add_widget(self.info)
 
         self.selected_beat = 0

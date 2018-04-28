@@ -83,7 +83,7 @@ class BeatManager:
         print next_beat # [DEBUGGING]
         for part in 'satb':
             if part in next_beat:
-                self.synth.noteon(0, next_beat[part], 100)  
+                self.synth.noteon(0, next_beat[part], 100)
                 self.current_playing_notes.add((0, next_beat[part]))
 
     def autocomplete_thread(self, beat_index, data):
