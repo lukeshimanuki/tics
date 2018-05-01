@@ -1,6 +1,8 @@
 from kivy.graphics.instructions import InstructionGroup
 from common.core import *
 
+import classical as config
+
 class Input(InstructionGroup):
     def __init__(self, on_beat_update_callback=lambda beat : None):
         super(Input, self).__init__()
@@ -82,48 +84,8 @@ class Input(InstructionGroup):
 
         sorted_notes = sorted_notes[len(active_note_parts):]
 
-        # TODO: somehow allow minor keys?
-        if 'key' in self.parts_enabled:
-            beat['key'] = sorted_notes[-1] % 12
-            sorted_notes = sorted_notes[:-1]
-
-        if 'chord' in self.parts_enabled:
-            # sort in increasing order
-            sorted_notes = sorted_notes[::-1]
-            # only take bottom 2
-            if len(sorted_notes) > 2:
-                sorted_notes = sorted_notes[:2]
-            # take relative to key
-            key = 0 # todo fix this
-            sorted_notes = [
-                (note - key) % 12
-                for note in sorted_notes
-            ]
-            # if single note, assume diatonic chord
-            chord_mapping = [
-                'I',
-                'I',
-                'ii',
-                'I',
-                'iii',
-                'IV',
-                'I',
-                'V',
-                'I',
-                'vi',
-                'I',
-                'vii',
-            ]
-            if len(sorted_notes) == 1:
-                beat['chord'] = chord_mapping[sorted_notes[0]]
-            elif (sorted_notes[1] - sorted_notes[0]) % 12 == 7:
-                base_tone = chord_mapping[sorted_notes[0]]
-                if base_tone in ['ii', 'IV', 'V', 'vi']:
-                    beat['chord'] = 'V/' + base_tone
-                else:
-                    beat['chord'] = 'I'
-            else:
-                beat['chord'] = 'I'
+        if 'harmony' in self.parts_enabled:
+            beat['harmony'] = config._input_harmony(sorted_notes[::-1])
 
         self.on_beat_update(beat)
 
