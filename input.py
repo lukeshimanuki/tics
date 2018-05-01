@@ -78,7 +78,7 @@ class Input(InstructionGroup):
         # Assign notes for parts in descending order
         active_note_parts = [part for part in 'satb' if part in self.parts_enabled]
         for index, part in enumerate(active_note_parts):
-            beat[part] = sorted_notes[index]
+            beat[part] = (sorted_notes[index],)
 
         sorted_notes = sorted_notes[len(active_note_parts):]
 

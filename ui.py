@@ -162,7 +162,7 @@ class PartSelector(BoxLayout):
 
         self.set_part_active = set_part_active_callback
         self.checkboxes = {}
-        for p in ['s', 'a', 't', 'b', 'chord', 'key']:
+        for p in ['s', 'a', 't', 'b', 'harmony']:
             checkbox = CheckBox()
             checkbox.bind(active=self.on_checkbox_toggled)
             self.checkboxes[p] = checkbox
@@ -170,7 +170,7 @@ class PartSelector(BoxLayout):
 
     def on_checkbox_toggled(self, checkbox, value):
         checkbox_active = value
-        for part in ['s', 'a', 't', 'b', 'chord', 'key']:
+        for part in ['s', 'a', 't', 'b', 'harmony']:
             if self.checkboxes[part] == checkbox:
                 self.set_part_active(part, checkbox_active)
 
@@ -243,8 +243,8 @@ class UI(BoxLayout):
             '\n'.join([
                 "{}: {} {}".format(
                     i,
-                    key_mapping[beat['key']] if 'key' in beat else '',
-                    beat['chord'] if 'chord' in beat else '',
+                    beat['harmony'].split('|')[1] if 'harmony' in beat else '',
+                    beat['harmony'].split('|')[0] if 'harmony' in beat else '',
                 )
                 for i, beat in enumerate(self.data[self.staff.beat + 1:])
             ])

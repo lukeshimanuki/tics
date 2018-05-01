@@ -18,7 +18,7 @@ from input import Input
 from ui import UI
 from autocomplete import autocomplete
 
-PADDING = 8
+PADDING = 5
 
 class BeatManager:
     def __init__(self, tempo=80, on_beat_callback=lambda : None):
@@ -27,14 +27,18 @@ class BeatManager:
         # This data structure describes a partial or full composition
         # It is just a list of "beats", where each "beat" is a dictionary of the following form:
         # {
-        #   's' : midi-value (0-127) # Soprano note
-        #   'a' : midi-value (0-127) # Alto note
-        #   't' : midi-value (0-127) # Tenor note
-        #   'b' : midi-value (0-127) # Bass note
-        #   'key' : key (0-11)       # Current key
-        #   'chord' : chord          # Harmony, or chord (in relation to the key)
+        #   's' : tuple              # Soprano note, (None) is rest, (-1) is hold previous
+        #   'a' : tuple              # Alto note
+        #   't' : tuple              # Tenor note
+        #   'b' : tuple              # Bass note
+        #   'key' : string           # Current key
+        #   'chord' : string         # Harmony, or chord (in relation to the key)
+        #   'spacing' : float (-1 - 1)  # how much spacing is preferred
+        #   'dissonance': float(-1 - 1) # how much dissonance is preferred
+        #   'manual' : set           # which keys were set manually by the user
+        #   'rhythm' : tuple         # template for satb lines, but with boolean values
         # }
-        self.data = [{'s': 72, 'a': 67, 't': 64, 'b': 60, 'chord': 'I', 'key': 0}, {}, {}, {}, {}, {}, {}]
+        self.data = [{'s': (72,), 'a': (67,), 't': (64,), 'b': (60,), 'harmony': 'I|C'}, {}, {}, {}, {}, {}, {}]
 
         # Add an initial chord
 
@@ -60,7 +64,7 @@ class BeatManager:
         self.sched.post_at_tick(480, self.on_beat)
 
     def beat_is_filled(self, beat_index):
-        for key in ['s', 'a', 't', 'b', 'chord', 'key']:
+        for key in ['s', 'a', 't', 'b', 'harmony']:
             if key not in self.data[beat_index]:
                 return False
         return True
@@ -83,8 +87,8 @@ class BeatManager:
         print next_beat # [DEBUGGING]
         for part in 'satb':
             if part in next_beat:
-                self.synth.noteon(0, next_beat[part], 100)
-                self.current_playing_notes.add((0, next_beat[part]))
+                self.synth.noteon(0, next_beat[part][0], 100)
+                self.current_playing_notes.add((0, next_beat[part][0]))
 
     def autocomplete_thread(self, beat_index, data):
         autocomplete_data = autocomplete(data)[1]
@@ -134,7 +138,7 @@ class MainWidget(BaseWidget):
             beat = self.beat_manager.data[i]
             for (voice, color, stem_direction) in self.ui.voice_info:
                 if voice in beat:
-                    self.ui.staff.add_note(i, beat[voice], color, stem_direction) 
+                    self.ui.staff.add_note(i, beat[voice][0], color, stem_direction) 
         if self.ui.staff.beat != self.beat_manager.current_beat_index:
             self.ui.staff.beat = self.beat_manager.current_beat_index
             self.ui.staff.draw()
@@ -149,7 +153,7 @@ class MainWidget(BaseWidget):
         print("{}: {}".format(selected_beat_index, beat))
         for (voice, color, stem_direction) in self.ui.voice_info:
             if voice in beat:
-                self.ui.staff.add_note(selected_beat_index, beat[voice], color, stem_direction)
+                self.ui.staff.add_note(selected_beat_index, beat[voice][0], color, stem_direction)
 
     def on_key_down(self, keycode, modifiers):
         self.input.on_key_down(keycode, modifiers)
