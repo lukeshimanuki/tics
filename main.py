@@ -31,8 +31,7 @@ class BeatManager:
         #   'a' : tuple              # Alto note
         #   't' : tuple              # Tenor note
         #   'b' : tuple              # Bass note
-        #   'key' : string           # Current key
-        #   'chord' : string         # Harmony, or chord (in relation to the key)
+        #   'harmony' : string         # Harmony (in relation to the key), of the form "chord|key" (eg "I|C")
         #   'spacing' : float (-1 - 1)  # how much spacing is preferred
         #   'dissonance': float(-1 - 1) # how much dissonance is preferred
         #   'manual' : set           # which keys were set manually by the user
