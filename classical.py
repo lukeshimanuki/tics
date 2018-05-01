@@ -100,6 +100,11 @@ _transitions.update({
             'V|iv': 1, # modulate to iv
             'iv|v': 1, # modulate to v
             'ii|III': 1, # modulate to III
+
+            'N': 1,
+            'It+6': 1,
+            'Fr+6': 1,
+            'Ger+6': 1,
         },
         'ii': {
             'V': 1,
@@ -130,6 +135,26 @@ _transitions.update({
         'V/VI': {
             'VI': 1,
         },
+
+        'N': {
+            'V': 1,
+            'vii': 1,
+            'V/V': 1,
+        },
+        'It+6': {
+            'V': 1,
+            'vii': 1,
+            'V/V': 1,
+        },
+        'Fr+6': {
+            'V': 1,
+            'vii': 1,
+            'V/V': 1,
+        },
+        'Ger+6': {
+            'vii': 1,
+            'V/V': 1,
+        },
     }
     for key in _minor_keys
 })
@@ -156,7 +181,7 @@ _notes.update({
     key: {
         'i': {0, 3, 7},
         'ii': {2, 5, 8},
-        'iv': {5, 9, 0},
+        'iv': {5, 8, 0},
         'V': {7, 11, 2},
         'VI': {8, 0, 3},
         'vii': {2, 5, 11},
@@ -164,6 +189,11 @@ _notes.update({
         'V/iv': {0, 4, 7},
         'V/V': {2, 6, 9},
         'V/VI': {3, 7, 10},
+
+        'N': {1, 5, 8},
+        'It+6': {6, 8, 0},
+        'Fr+6': {6, 8, 0, 2},
+        'Ger+6': {6, 8, 0, 3},
     }
     for key in _minor_keys
 })
@@ -221,10 +251,10 @@ def _input_harmony(keys):
 
     minor_chords = [
         'i',
-        'i',
+        'N',
         'ii',
         'i',
-        'i',
+        'Fr+6',
         'iv',
         'i',
         'v',
