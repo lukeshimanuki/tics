@@ -126,7 +126,7 @@ class MainWidget(BaseWidget):
         self.input = Input(self.update_beat_from_input)
 
         # Draw the UI
-        self.ui = UI(self.beat_manager.data, self.input)
+        self.ui = UI(self.beat_manager.data, self.input, spacing=30)
         layout = FloatLayout(size=Window.size)
         layout.add_widget(self.ui)
         self.add_widget(layout)

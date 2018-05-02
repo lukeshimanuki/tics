@@ -168,11 +168,20 @@ class PartSelector(BoxLayout):
 
         self.set_part_active = set_part_active_callback
         self.checkboxes = {}
-        for p in ['s', 'a', 't', 'b', 'harmony']:
-            checkbox = CheckBox()
+        for name, key in [('Soprano', 's'), ('Alto', 'a'), ('Tenor', 't'),
+                           ('Bass', 'b'), ('Harmony', 'harmony')]:
+            box = BoxLayout(orientation='horizontal')
+
+            label = Label(text=name, halign='right', valign='middle')
+            label.bind(size=label.setter('text_size'))
+
+            checkbox = CheckBox(size_hint=(0.4, 1.0))
             checkbox.bind(active=self.on_checkbox_toggled)
-            self.checkboxes[p] = checkbox
-            self.add_widget(self.checkboxes[p])
+            self.checkboxes[key] = checkbox
+
+            box.add_widget(label)
+            box.add_widget(self.checkboxes[key])
+            self.add_widget(box)
 
     def on_checkbox_toggled(self, checkbox, value):
         checkbox_active = value
