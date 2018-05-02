@@ -145,7 +145,7 @@ class MainWidget(BaseWidget):
     def on_beat(self):
         self.input.reset()
         self.draw_beats_on_staff()
-        
+
     def update_beat_from_input(self, beat):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
         self.beat_manager.data[selected_beat_index].update(beat)
@@ -155,6 +155,7 @@ class MainWidget(BaseWidget):
                 self.ui.staff.add_note(selected_beat_index, beat[voice][0], color, stem_direction)
 
     def on_key_down(self, keycode, modifiers):
+        self.ui.on_key_down(keycode, modifiers)
         self.input.on_key_down(keycode, modifiers)
 
         if keycode[1] == 'left':

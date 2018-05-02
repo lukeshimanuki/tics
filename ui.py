@@ -196,6 +196,11 @@ class PartSelector(BoxLayout):
             if self.checkboxes[part] == checkbox:
                 self.set_part_active(part, checkbox_active)
 
+    def on_key_down(self, keycode, modifiers):
+        part = lookup(keycode[1], 'satbh', ('s', 'a', 't', 'b', 'harmony'))
+        if part:
+            self.checkboxes[part]._do_press()
+
 class UI(BoxLayout):
 
     # Associate voices with colors and stem directions.
@@ -238,6 +243,9 @@ class UI(BoxLayout):
             for (voice, color, stem_direction) in self.voice_info:
                 if voice in beat:
                     pass#self.staff.add_note(i, beat[voice], color, stem_direction)
+
+    def on_key_down(self, keycode, modifiers):
+        self.part_selector.on_key_down(keycode, modifiers)
 
     def on_beat(self, tick):
         pass#print(tick)
