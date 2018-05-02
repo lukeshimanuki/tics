@@ -7,6 +7,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
+from kivy.uix.button import ButtonBehavior
 
 from common.core import *
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
@@ -161,27 +162,33 @@ class VisualNote(InstructionGroup):
             self.ledger_color.a = self.color.a
         #self.color.v = self.color_anim.eval(self.time)
 
+class LabelButton(ButtonBehavior, Label):
+    pass
 
 class PartSelector(BoxLayout):
     def __init__(self, set_part_active_callback, *args, **kwargs):
         super(PartSelector, self).__init__(*args, orientation='vertical', **kwargs)
 
-        self.set_part_active = set_part_active_callback
-        self.checkboxes = {}
-        for name, key in [('Soprano', 's'), ('Alto', 'a'), ('Tenor', 't'),
-                           ('Bass', 'b'), ('Harmony', 'harmony')]:
+        def add_checkbox(name, key):
+            # This needs to be a separate function in order for the closure (in on_press) to work.
             box = BoxLayout(orientation='horizontal')
-
-            label = Label(text=name, halign='right', valign='middle')
-            label.bind(size=label.setter('text_size'))
 
             checkbox = CheckBox(size_hint=(0.4, 1.0))
             checkbox.bind(active=self.on_checkbox_toggled)
             self.checkboxes[key] = checkbox
 
+            label = LabelButton(text=name, font_size=25, halign='right', valign='middle', on_press=lambda _: checkbox._do_press())
+            label.bind(size=label.setter('text_size'))
+
             box.add_widget(label)
             box.add_widget(self.checkboxes[key])
             self.add_widget(box)
+
+        self.set_part_active = set_part_active_callback
+        self.checkboxes = {}
+        for name, key in [('Soprano', 's'), ('Alto', 'a'), ('Tenor', 't'),
+                           ('Bass', 'b'), ('Harmony', 'harmony')]:
+            add_checkbox(name, key)
 
     def on_checkbox_toggled(self, checkbox, value):
         checkbox_active = value
