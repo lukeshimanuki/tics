@@ -12,7 +12,7 @@ from common.core import *
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
 from common.gfxutil import topleft_label
 
-# TODO: Barlines, stems, standard accidentals, bass clef.
+# TODO: Barlines, stems, standard accidentals.
 
 def pitch_to_staff(pitch, accidental_type=1):
     # Convert a pitch to a height in treble cleff. E4 is 0, as it corresponds
@@ -41,15 +41,21 @@ class Staff(Widget):
     def draw(self, a=None, b=None):
         self.objects.clear()
         self.spacing = self.size[1] / 10.0
-        for i in range(5):
-            height = 0 + i * self.size[1] / 5.0
+        for i in range(11):
+            if i == 5:
+                # Middle C is relegated to ledger lines.
+                continue
+            height = i * self.spacing * 2 - self.spacing * 4
             self.objects.add(Line(points=(0, height, self.size[0], height)))
-        self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 3.5),
+        self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 11.5),
                                     size=(self.spacing * 5, self.spacing * 12),
                                     texture=Image('data/treble.png').texture))
+        self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 0.5),
+                                    size=(self.spacing * 5, self.spacing * 7),
+                                    texture=Image('data/bass.png').texture))
         self.objects.add(PushMatrix())
         # TODO: Make the x-component based on the current time.
-        self.translation = Translate(self.size[0] * 0.25, 0)
+        self.translation = Translate(self.size[0] * 0.25, self.spacing * 8)
         self.objects.add(self.translation)
         self.moving_objects = AnimGroup()
         for (beat, pitch, color, stem_direction) in self.notes:
