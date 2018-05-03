@@ -18,10 +18,15 @@ from input import Input
 from ui import UI
 from autocomplete import autocomplete
 
-PADDING = 5
+
+# Instrument groups
+PIANO = {'s': 0, 'a': 0, 't': 0, 'b': 0}
+STRING_QUARTET = {'s': 41, 'a': 41, 't': 42, 'b': 43} # 2 violins, viola, cello
+WOODWIND_QUARTET = {'s': 74, 'a': 69, 't': 72, 'b': 72} # flute, oboe, clarinet, bassoon
+SAX_QUARTET = {'s': 65, 'a': 66, 't': 67, 'b': 68} # soprano, alto, tenor, bari
 
 class BeatManager:
-    def __init__(self, tempo=80, on_beat_callback=lambda : None):
+    def __init__(self, tempo=80, instruments=STRING_QUARTET, on_beat_callback=lambda : None):
 
         # Data structure
         # This data structure describes a partial or full composition
@@ -37,9 +42,12 @@ class BeatManager:
         #   'manual' : set           # which keys were set manually by the user
         #   'rhythm' : tuple         # template for satb lines, but with boolean values
         # }
+
+        # Set initial data
         self.data = [{'s': (72,), 'a': (67,), 't': (64,), 'b': (60,), 'harmony': 'I|C'}, {}, {}, {}, {}, {}, {}]
 
-        # Add an initial chord
+       	# Class constants
+        self.PADDING = 5
 
         # Class variables
         self.on_beat_callback = on_beat_callback
@@ -52,6 +60,7 @@ class BeatManager:
         self.audio = Audio(2)
         self.synth = Synth('data/FluidR3_GM.sf2')
         self.synth.program(0, 0, 0)
+        self.set_instruments(instruments)
 
         # Create TempoMap & AudioScheduler
         self.tempo_map  = SimpleTempoMap(tempo)
@@ -61,6 +70,12 @@ class BeatManager:
         self.audio.set_generator(self.sched)
         self.sched.set_generator(self.synth)
         self.sched.post_at_tick(480, self.on_beat)
+
+    def set_instruments(self, instruments):
+        self.instruments = instruments
+        for channel, part in enumerate('satb'):
+        	preset = self.instruments[part]
+        	self.synth.program(channel, 0, preset)
 
     def beat_is_filled(self, beat_index):
         for key in ['s', 'a', 't', 'b', 'harmony']:
@@ -84,10 +99,10 @@ class BeatManager:
         # Start playing notes in the next beat
         next_beat = self.data[self.current_beat_index]
         print next_beat # [DEBUGGING]
-        for part in 'satb':
+        for channel, part in enumerate('satb'):
             if part in next_beat:
-                self.synth.noteon(0, next_beat[part][0], 100)
-                self.current_playing_notes.add((0, next_beat[part][0]))
+                self.synth.noteon(channel, next_beat[part][0], 100)
+                self.current_playing_notes.add((channel, next_beat[part][0]))
 
     def autocomplete_thread(self, beat_index, data):
         autocomplete_data = autocomplete(data)[1]
@@ -95,7 +110,7 @@ class BeatManager:
 
     def autocomplete_beat(self, beat_index):
         # Pad data with empty beats
-        while len(self.data) < beat_index + PADDING:
+        while len(self.data) < beat_index + self.PADDING:
             self.data.append({})
 
         # Don't autocomplete if beat is already filled in
@@ -149,7 +164,7 @@ class MainWidget(BaseWidget):
     def update_beat_from_input(self, beat):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
         self.beat_manager.data[selected_beat_index].update(beat)
-        print("{}: {}".format(selected_beat_index, beat))
+        print("{}: {}".format(selected_beat_index, beat)) # [DEBUGGING]
         for (voice, color, stem_direction) in self.ui.voice_info:
             if voice in beat:
                 self.ui.staff.add_note(selected_beat_index, beat[voice][0], color, stem_direction)
@@ -161,7 +176,7 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'left':
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
-            self.ui.selected_beat = min(self.ui.selected_beat + 1, PADDING - 2)
+            self.ui.selected_beat = min(self.ui.selected_beat + 1, self.beat_manager.PADDING - 2)
 
     def on_key_up(self, keycode):
         self.input.on_key_up(keycode)
@@ -173,7 +188,6 @@ class MainWidget(BaseWidget):
         self.beat_manager.on_update()
         self.input.on_update()
         self.ui.on_update()
-        # self.draw_beats_on_staff()
 
 if __name__ == "__main__":
     run(MainWidget)
