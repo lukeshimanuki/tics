@@ -1,5 +1,6 @@
 from kivy.graphics.instructions import InstructionGroup
 from common.core import *
+import copy
 
 import classical as config
 
@@ -87,6 +88,8 @@ class Input(InstructionGroup):
 
         if 'harmony' in self.parts_enabled:
             beat['harmony'] = config._input_harmony(sorted_notes[::-1])
+
+        beat['manual'] = copy.deepcopy(self.parts_enabled)
 
         self.on_beat_update(beat)
 
