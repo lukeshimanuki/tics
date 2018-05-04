@@ -16,11 +16,14 @@ class Input(InstructionGroup):
         try:
             # Attempt to set up MIDI input, if rtmidi is installed.
             import rtmidi
-            from rtmidi import midiconstants
+            #from rtmidi import midiconstants
+            class midiconstants:
+                NOTE_OFF = 0x80
+                NOTE_ON = 0x90
             self.midi_in = rtmidi.MidiIn(name='TICS')
             available_ports = self.midi_in.get_ports()
             print(available_ports)
-            self.midi_in.open_port(1)
+            self.midi_in.open_port(24)
             print('Opened MIDI port.')
             self.last_msg = None
             def midi_callback(msgtime, _ = None):

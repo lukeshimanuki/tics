@@ -257,7 +257,7 @@ def _input_harmony(keys):
         'Fr+6',
         'iv',
         'i',
-        'v',
+        'V',
         'VI',
         'i',
         'i',
