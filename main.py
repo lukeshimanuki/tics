@@ -4,6 +4,7 @@ import numpy as np
 import bisect
 import copy
 import multiprocessing
+import time
 import Queue
 
 from kivy.uix.floatlayout import FloatLayout
@@ -11,7 +12,7 @@ from kivy.uix.floatlayout import FloatLayout
 from common.core import *
 from common.audio import Audio
 from common.synth import Synth
-from common.clock import SimpleTempoMap, AudioScheduler
+from common.clock import SimpleTempoMap, AudioScheduler, Scheduler, Clock
 from common.gfxutil import AnimGroup
 
 from input import Input
@@ -46,7 +47,7 @@ class BeatManager:
         # Set initial data
         self.data = [{'s': (72,), 'a': (67,), 't': (64,), 'b': (60,), 'harmony': 'I|C'}, {}, {}, {}, {}, {}, {}]
 
-       	# Class constants
+        # Class constants
         self.PADDING = 5
 
         # Class variables
@@ -56,26 +57,51 @@ class BeatManager:
         self.current_playing_notes = set()
         self.autocomplete_data = multiprocessing.Queue()
 
-        # Initialize audio
-        self.audio = Audio(2)
+        self.tempo_map  = SimpleTempoMap(tempo)
+        self.sched = Scheduler(Clock(), self.tempo_map)
+        self.sched.post_at_tick(480, self.on_beat)
+
         self.synth = Synth('data/FluidR3_GM.sf2')
         self.synth.program(0, 0, 0)
         self.set_instruments(instruments)
 
-        # Create TempoMap & AudioScheduler
-        self.tempo_map  = SimpleTempoMap(tempo)
-        self.sched = AudioScheduler(self.tempo_map)
+        self.note_queue = multiprocessing.Queue()
+        audio_process = multiprocessing.Process(target=self.audio_process, args=(self.note_queue,))
+        audio_process.start()
+
+    def audio_process(self, note_queue):
+        # Initialize audio
+        audio = Audio(2)
+
+        sched = AudioScheduler(self.tempo_map)
 
         # Connect scheduler into audio system
-        self.audio.set_generator(self.sched)
-        self.sched.set_generator(self.synth)
-        self.sched.post_at_tick(480, self.on_beat)
+        audio.set_generator(sched)
+        sched.set_generator(self.synth)
+
+        while True:
+            try:
+                channel, note, volume, start, length = note_queue.get(False)
+                tick = sched.get_tick()
+                channel = 0 # comment out if not luke
+                sched.post_at_tick(tick + start * 480, self._noteon, (channel, note, volume))
+                sched.post_at_tick(tick + length * 480, self._noteoff, (channel, note))
+
+            except Queue.Empty:
+                audio.on_update()
+                time.sleep(.01)
+
+    def _noteon(self, tick, (channel, note, volume)):
+        self.synth.noteon(channel, note, volume)
+
+    def _noteoff(self, tick, (channel, note)):
+        self.synth.noteoff(channel, note)
 
     def set_instruments(self, instruments):
         self.instruments = instruments
         for channel, part in enumerate('satb'):
-        	preset = self.instruments[part]
-        	self.synth.program(channel, 0, preset)
+            preset = self.instruments[part]
+            self.synth.program(channel, 0, preset)
 
     def beat_is_filled(self, beat_index):
         for key in ['s', 'a', 't', 'b', 'harmony']:
@@ -91,18 +117,33 @@ class BeatManager:
         self.autocomplete_beat(self.current_beat_index)
 
     def play_next_beat(self):
-        # Stop playing any previous notes
-        for channel, note in self.current_playing_notes:
-            self.synth.noteoff(channel, note)
-        self.current_playing_notes.clear()
+        ## Stop playing any previous notes
+        #for channel, note in self.current_playing_notes:
+        #    self.synth.noteoff(channel, note)
+        #self.current_playing_notes.clear()
 
         # Start playing notes in the next beat
         next_beat = self.data[self.current_beat_index]
         print next_beat # [DEBUGGING]
         for channel, part in enumerate('satb'):
             if part in next_beat:
-                self.synth.noteon(channel, next_beat[part][0], 100)
-                self.current_playing_notes.add((channel, next_beat[part][0]))
+                num = len(next_beat[part])
+                notes = []
+                starts = []
+                lengths = []
+                for idx, note in enumerate(next_beat[part]):
+                    if note == -1:
+                        lengths[-1] += 1
+                    elif note == None:
+                        pass
+                    else:
+                        notes.append(note)
+                        starts.append(idx)
+                        lengths.append(1)
+                for idx, note in enumerate(notes):
+                    self.note_queue.put((channel, note, 100, float(starts[idx]) / num, float(lengths[idx]) / num))
+                #self.synth.noteon(channel, next_beat[part][0], 100)
+                #self.current_playing_notes.add((channel, next_beat[part][0]))
 
     def autocomplete_thread(self, beat_index, data):
         autocomplete_data = autocomplete(data)[1]
@@ -122,7 +163,8 @@ class BeatManager:
         process.start()
 
     def on_update(self):
-        self.audio.on_update()
+        #self.audio.on_update()
+        self.sched.on_update()
 
         # Fill in any autocompleted beats
         try:
