@@ -4,13 +4,15 @@ import copy
 
 import classical as config
 
+KEYBOARD_KEYS = '1234567890'
+MIDI_VALUES = [72, 74, 76, 77, 79, 81, 83, 84, 86, 88]
+
 class Input(InstructionGroup):
     def __init__(self, on_beat_update_callback=lambda beat : None):
         super(Input, self).__init__()
 
         self.parts_enabled = set()
         self.input_notes = set()
-        #self.beat = {}
         self.beat_needs_update = False
         self.on_beat_update = on_beat_update_callback
 
@@ -42,7 +44,6 @@ class Input(InstructionGroup):
 
     def reset(self):
         self.input_notes = set()
-        #self.beat = {}
         self.beat_needs_update = True
 
     def set_part_enabled(self, part, enabled):
@@ -56,12 +57,12 @@ class Input(InstructionGroup):
         return len([part for part in 'satb' if part in self.parts_enabled])
 
     def on_key_down(self, keycode, modifiers):
-        midi_value = lookup(keycode[1], '1234567890', [72, 74, 76, 77, 79, 81, 83, 84, 86, 88])
+        midi_value = lookup(keycode[1], KEYBOARD_KEYS, MIDI_VALUES)
         if midi_value is not None:
             self.on_midi_down(midi_value)
 
     def on_key_up(self, keycode):
-        midi_value = lookup(keycode[1], '1234567890', [72, 74, 76, 77, 79, 81, 83, 84, 86, 88])
+        midi_value = lookup(keycode[1], KEYBOARD_KEYS, MIDI_VALUES)
         if midi_value is not None:
             self.on_midi_up(midi_value)
 
@@ -76,7 +77,6 @@ class Input(InstructionGroup):
 
     def populate_beat_with_notes(self, notes):
         beat = {}
-
         sorted_notes = sorted(notes, reverse=True)
 
         # Assign notes for parts in descending order
@@ -93,15 +93,6 @@ class Input(InstructionGroup):
 
         self.on_beat_update(beat)
 
-
-    #def set_beat_chord(self, chord):
-    #    self.beat['chord'] = chord
-    #    self.on_beat_update(self.beat)
-
-    #def set_beat_key(self, key):
-    #    self.beat['key'] = key
-    #    self.on_beat_update(self.beat)
-
     def update_input_notes(self):
         # Use the most recently entered input notes if we have more than we need
         if len(self.input_notes) > self.num_input_note_parts():
@@ -110,10 +101,9 @@ class Input(InstructionGroup):
     def update_beat(self):
         if self.beat_needs_update and len(self.input_notes) >= len(self.parts_enabled):
             self.populate_beat_with_notes(self.input_notes)
-            #self.on_beat_update(self.beat)
             self.beat_needs_update = False
 
     def on_update(self):
-        #self.update_input_notes()
+        # self.update_input_notes()
         self.update_beat()
 
