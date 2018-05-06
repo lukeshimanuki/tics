@@ -5,6 +5,7 @@ import copy
 config = __import__('classical')
 
 def input_config(name):
+    global config
     config = __import__(name)
 
 KEYBOARD_KEYS = '1234567890'

@@ -4,6 +4,7 @@ import copy
 config = __import__('classical')
 
 def autocomplete_config(name):
+    global config
     config = __import__(name)
 
 np.random.seed()
