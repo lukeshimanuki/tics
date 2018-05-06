@@ -36,7 +36,7 @@ class Input(InstructionGroup):
                 if msg[0] == midiconstants.NOTE_ON and msg[0:2] != self.last_msg:
                     self.on_midi_down(msg[1])
                     self.last_msg = msg[0:2]
-                    # TODO: set velocity
+                    self.velocity = msg[2]
                 elif msg[0] == midiconstants.NOTE_OFF and msg[0:2] != self.last_msg:
                     self.on_midi_up(msg[1])
                     self.last_msg = msg[0:2]
