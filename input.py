@@ -88,6 +88,40 @@ class Input(InstructionGroup):
 
         if 'harmony' in self.parts_enabled:
             beat['harmony'] = config._input_harmony(sorted_notes[::-1])
+        # don't support both harmony and rhythm setting at same time :(
+        elif 'mel_rhythm' in self.parts_enabled:
+            if len(sorted_notes) >= 2:
+                base = sorted_notes[-1]
+                end = sorted_notes[0]
+                beat['mel_rhythm'] = tuple(
+                    note in sorted_notes
+                    for note in range(base + 1, end)
+                )
+        elif 'acc_rhythm' in self.parts_enabled:
+            if len(sorted_notes) == 2:
+                beat['acc_rhythm'] = {
+                    'a': (False, True, True),
+                    't': (False, True, True),
+                    'b': (True, -1, -1),
+                }
+            if len(sorted_notes) == 3:
+                beat['acc_rhythm'] = {
+                    'a': (False, False, True),
+                    't': (False, True, False),
+                    'b': (True, False, False),
+                }
+            if len(sorted_notes) == 4:
+                beat['acc_rhythm'] = {
+                    'a': (False, True, False, True),
+                    't': (False, False, True, False),
+                    'b': (True, False, False, False),
+                }
+            if len(sorted_notes) == 5:
+                beat['acc_rhythm'] = {
+                    'a': (False, False, True, False),
+                    't': (False, True, False, True),
+                    'b': (True, False, False, False),
+                }
 
         beat['manual'] = copy.deepcopy(self.parts_enabled)
 

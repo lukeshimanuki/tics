@@ -41,7 +41,8 @@ class BeatManager:
         #   'spacing' : float (-1 - 1)  # how much spacing is preferred
         #   'dissonance': float(-1 - 1) # how much dissonance is preferred
         #   'manual' : set           # which keys were set manually by the user
-        #   'rhythm' : tuple         # template for satb lines, but with boolean values
+        #   'mel_rhythm' : tuple     # template for s line, but with boolean values
+        #   'acc_rhythm' : dict         # template for atb lines, but with booleans (-1 is hold previous)
         # }
 
         # Set initial data

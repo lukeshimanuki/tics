@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 import classical as config
 
@@ -139,6 +140,19 @@ def enumerate_notes(prev, next, harmony):
     ]
 
 def autocomplete(data):
+    # retain rhythm
+    if 'mel_rhythm' not in data[1]:
+        if 'mel_rhythm' in data[0]:
+            data[1]['mel_rhythm'] = copy.deepcopy(data[0]['mel_rhythm'])
+        else:
+            data[1]['mel_rhythm'] = (True,)
+
+    if 'acc_rhythm' not in data[1]:
+        if 'acc_rhythm' in data[0]:
+            data[1]['acc_rhythm'] = copy.deepcopy(data[0]['acc_rhythm'])
+        else:
+            data[1]['acc_rhythm'] = {'a': (True,), 't': (True,), 'b': (True,)}
+
     # find path in key/chord graph
     paths, costs = zip(*enumerate_paths(data, 0, data[0]['harmony']))
     np_costs = np.array(costs)
@@ -160,6 +174,20 @@ def autocomplete(data):
 
     # set notes
     data[1] = dict(voicing.items() + data[1].items())
+
+    # apply voicing to notes
+    print(data)
+    for part in 'atb':
+        notes = data[1][part]
+        data[1][part] = tuple(
+            notes[idx % len(notes)] if value == True else -1 if value == -1 else None
+            for idx,value in enumerate(data[1]['acc_rhythm'][part])
+        )
+    notes = data[1]['s']
+    data[1]['s'] = tuple(
+        notes[idx % len(notes)] if value == True else -1 if value == -1 else None
+        for idx,value in enumerate(data[1]['mel_rhythm'])
+    )
 
     return data
 
