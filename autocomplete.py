@@ -1,7 +1,10 @@
 import numpy as np
 import copy
 
-import classical as config
+config = __import__('classical')
+
+def autocomplete_config(name):
+    config = __import__(name)
 
 np.random.seed()
 

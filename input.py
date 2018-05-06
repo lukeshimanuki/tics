@@ -2,7 +2,10 @@ from kivy.graphics.instructions import InstructionGroup
 from common.core import *
 import copy
 
-import classical as config
+config = __import__('classical')
+
+def input_config(name):
+    config = __import__(name)
 
 KEYBOARD_KEYS = '1234567890'
 MIDI_VALUES = [72, 74, 76, 77, 79, 81, 83, 84, 86, 88]

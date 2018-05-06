@@ -15,10 +15,13 @@ from common.synth import Synth
 from common.clock import SimpleTempoMap, AudioScheduler, Scheduler, Clock
 from common.gfxutil import AnimGroup
 
-from input import Input
+from input import Input, input_config
 from ui import UI
-from autocomplete import autocomplete
+from autocomplete import autocomplete, autocomplete_config
 
+if len(sys.argv) >= 2:
+    autocomplete_config(sys.argv[1])
+    input_config(sys.argv[1])
 
 # Instrument groups
 PIANO = {'s': 0, 'a': 0, 't': 0, 'b': 0}
