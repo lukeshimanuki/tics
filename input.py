@@ -14,6 +14,8 @@ class Input(InstructionGroup):
         self.beat_needs_update = False
         self.on_beat_update = on_beat_update_callback
 
+        self.velocity = 64
+
         try:
             # Attempt to set up MIDI input, if rtmidi is installed.
             import rtmidi
@@ -32,6 +34,7 @@ class Input(InstructionGroup):
                 if msg[0] == midiconstants.NOTE_ON and msg[0:2] != self.last_msg:
                     self.on_midi_down(msg[1])
                     self.last_msg = msg[0:2]
+                    # TODO: set velocity
                 elif msg[0] == midiconstants.NOTE_OFF and msg[0:2] != self.last_msg:
                     self.on_midi_up(msg[1])
                     self.last_msg = msg[0:2]
@@ -85,6 +88,15 @@ class Input(InstructionGroup):
             beat[part] = (sorted_notes[index],)
 
         sorted_notes = sorted_notes[len(active_note_parts):]
+
+        if 'spacing' in self.parts_enabled and len(sorted_notes) >= 2:
+            spacing_notes = sorted_notes[:2]
+            spacing = spacing_notes[0] - spacing_notes[1]
+            beat['spacing'] = spacing / 6. - 1.
+            sorted_notes = sorted_notes[2:]
+
+        if 'dissonance' in self.parts_enabled:
+            beat['dissonance'] = self.velocity / 64. - 1
 
         if 'harmony' in self.parts_enabled:
             beat['harmony'] = config._input_harmony(sorted_notes[::-1])

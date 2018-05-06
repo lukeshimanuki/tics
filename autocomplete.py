@@ -63,8 +63,8 @@ def voicing_line_cost(prev, this):
     cost += diff * .1
     return cost
 
-def voicing_spacing_cost(chord):
-    coeff = -.1 * chord['spacing'] if 'spacing' in chord else 0
+def voicing_spacing_cost(chord, beat):
+    coeff = -.5 * beat['spacing'] if 'spacing' in beat else 0
     for i in 'satb':
         if i not in chord:
             return 0
@@ -80,6 +80,7 @@ def voicing_spacing_cost(chord):
         cost += 1
     if b >= t:
         cost += 1
+    cost *= 10
 
     cost += (s - a) * coeff
     cost += (a - t) * coeff
@@ -100,7 +101,7 @@ def voicing_parallel_intervals_cost(prev, this):
                         cost += 10
     return cost
 
-def voicing_cost(prev, this, next):
+def voicing_cost(prev, this, next, beat):
     return sum([
         voicing_line_cost(prev[i], this[i])
         for i in 'satb'
@@ -112,11 +113,11 @@ def voicing_cost(prev, this, next):
         if i in this
         and i in next
     ] + [
-        voicing_spacing_cost(this),
+        voicing_spacing_cost(this, beat),
         voicing_parallel_intervals_cost(prev, this),
     ]) * 5
 
-def enumerate_notes(prev, next, harmony):
+def enumerate_notes(prev, next, harmony, beat):
     return [
         ({
             's': (s,),
@@ -128,7 +129,7 @@ def enumerate_notes(prev, next, harmony):
             'a': (a,),
             't': (t,),
             'b': (b,),
-        }, next))
+        }, next, beat))
         for s in config._ranges['s']
         for a in config._ranges['a']
         for t in config._ranges['t']
@@ -166,7 +167,7 @@ def autocomplete(data):
         data[1]['harmony'] = harmony
 
     # pick notes based on key/chord
-    voicings, costs = zip(*enumerate_notes(data[0], data[2], harmony))
+    voicings, costs = zip(*enumerate_notes(data[0], data[2], harmony, data[1]))
     np_costs = np.array(costs)
     probs = softmax(-np_costs)
     voicings_idx = np.random.choice(np.arange(len(voicings)), p=probs)
