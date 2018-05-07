@@ -28,19 +28,26 @@ def apply_transition(key, transition):
     else:
         return "{}|{}".format(transition, key)
 
+def get_first(notes):
+    for note in notes:
+        if note is not None and note != -1:
+            return note
+    return 60
+def get_last(notes):
+    return get_first(notes[::-1])
 def get_voice(notes):
     l = len(notes)
     if len(notes) == 0:
         return 60
     elif len(notes) == 1:
         return notes[0]
-    elif not notes[0] is None:
+    elif not notes[0] is None and notes[0] != -1:
         return notes[0]
     else:
         for i in range(2,l):
             if len(notes) % i == 0:
                 for j in range(l / i):
-                    if not notes[i * j] is None:
+                    if not notes[i * j] is None and notes[i * j] != -1:
                         return notes[i * j]
         return 60
 
@@ -70,7 +77,7 @@ def softmax(x):
     return r/r.sum(axis=0)
 
 def voicing_line_cost(prev, this):
-    diff = abs(get_voice(prev) - get_voice(this))
+    diff = abs(get_last(prev) - get_first(this))
     cost = 0
     if diff in [6, 10, 11]:
         cost += 2
@@ -160,6 +167,16 @@ def enumerate_notes(prev, next, harmony, beat):
         and b % 12 in notes(harmony)
     ]
 
+def decorate(base, chord, scale):
+    if np.random.randint(0,100) < 20:
+        return [base]
+    for i in range(100):
+        next_note = np.random.randint(base - 5, base + 6)
+        if next_note % 12 not in chord and not (abs(next_note - base) <= 2 and next_note % 12 in scale) or next_note not in config._ranges['s']:
+            continue
+        return [base] + decorate(next_note, chord, scale)
+    return [base]
+
 def autocomplete(data):
     # retain rhythm
     if 'mel_rhythm' not in data[1]:
@@ -196,17 +213,21 @@ def autocomplete(data):
     # set notes
     data[1] = dict(voicing.items() + data[1].items())
 
-    # apply voicing to notes
+    # decorations
+    decorated = tuple(decorate(get_first(data[1]['s']), notes(data[1]['harmony']), config._scale(data[1]['harmony'].split('|')[1])))
+    data[1]['s'] = decorated
+
+    # apply rhythm to voices
     print(data)
     for part in 'atb':
-        notes = data[1][part]
+        p_notes = data[1][part]
         data[1][part] = tuple(
-            notes[idx % len(notes)] if value == True else -1 if value == -1 else None
+            p_notes[idx % len(p_notes)] if value == True else -1 if value == -1 else None
             for idx,value in enumerate(data[1]['acc_rhythm'][part])
         )
-    notes = data[1]['s']
+    s_notes = data[1]['s']
     data[1]['s'] = tuple(
-        notes[idx % len(notes)] if value == True else -1 if value == -1 else None
+        s_notes[idx % len(s_notes)] if value == True else -1 if value == -1 else None
         for idx,value in enumerate(data[1]['mel_rhythm'])
     )
 

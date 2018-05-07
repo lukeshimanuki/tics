@@ -214,8 +214,15 @@ _notes = {
     for key, d in _notes.items()
 }
 
-def _key_change(key, root):
+def _scale(key):
     scale = [0, 2, 4, 5, 7, 9, 11] if key.isupper() else [0, 2, 3, 5, 7, 8, 11]
+    return [
+        (note + _keys[key]) % 12
+        for note in scale
+    ]
+
+def _key_change(key, root):
+    scale = _scale(key)
     num_to_roman = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii']
     roman_to_num = {
         roman: scale[num]
