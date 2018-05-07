@@ -40,7 +40,10 @@ def get_voice(notes):
     if len(notes) == 0:
         return 60
     elif len(notes) == 1:
-        return notes[0]
+        if not notes[0] is None and notes[0] != -1:
+            return notes[0]
+        else:
+            return 60
     elif not notes[0] is None and notes[0] != -1:
         return notes[0]
     else:
