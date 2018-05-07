@@ -114,6 +114,12 @@ class Input(InstructionGroup):
                     for note in range(base + 1, end)
                 )
         elif 'acc_rhythm' in self.parts_enabled:
+            if len(sorted_notes) == 1:
+                beat['acc_rhythm'] = {
+                    'a': (True,),
+                    't': (True,),
+                    'b': (True,),
+                }
             if len(sorted_notes) == 2:
                 beat['acc_rhythm'] = {
                     'a': (False, True, True),

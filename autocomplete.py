@@ -28,6 +28,22 @@ def apply_transition(key, transition):
     else:
         return "{}|{}".format(transition, key)
 
+def get_voice(notes):
+    l = len(notes)
+    if len(notes) == 0:
+        return 60
+    elif len(notes) == 1:
+        return notes[0]
+    elif not notes[0] is None:
+        return notes[0]
+    else:
+        for i in range(2,l):
+            if len(notes) % i == 0:
+                for j in range(l / i):
+                    if not notes[i * j] is None:
+                        return notes[i * j]
+        return 60
+
 def enumerate_paths(data, idx, harmony):
     if idx >= len(data):
         return [([], 0)]
@@ -40,10 +56,10 @@ def enumerate_paths(data, idx, harmony):
             [harmony] + tail,
             new_cost + config._dissonance(harmony) * coeff + tail_cost
             + (float('inf') if 'harmony' in beat and harmony != beat['harmony'] else 0)
-            + (100 if 's' in beat and beat['s'][0] % 12 not in notes(harmony) else 0)
-            + (100 if 'a' in beat and beat['a'][0] % 12 not in notes(harmony) else 0)
-            + (100 if 't' in beat and beat['t'][0] % 12 not in notes(harmony) else 0)
-            + (100 if 'b' in beat and beat['b'][0] % 12 not in notes(harmony) else 0)
+            + (100 if 's' in beat and get_voice(beat['s']) % 12 not in notes(harmony) else 0)
+            + (100 if 'a' in beat and get_voice(beat['a']) % 12 not in notes(harmony) else 0)
+            + (100 if 't' in beat and get_voice(beat['t']) % 12 not in notes(harmony) else 0)
+            + (100 if 'b' in beat and get_voice(beat['b']) % 12 not in notes(harmony) else 0)
         )
         for transition, new_cost in transitions(harmony).items()
         for tail, tail_cost in enumerate_paths(data, idx + 1, apply_transition(harmony, transition))
@@ -54,7 +70,7 @@ def softmax(x):
     return r/r.sum(axis=0)
 
 def voicing_line_cost(prev, this):
-    diff = abs(prev[-1] - this[0])
+    diff = abs(get_voice(prev) - get_voice(this))
     cost = 0
     if diff in [6, 10, 11]:
         cost += 2
@@ -73,7 +89,7 @@ def voicing_spacing_cost(chord, beat):
         if i not in chord:
             return 0
     cost = 0
-    s,a,t,b = [chord[i][0] for i in 'satb']
+    s,a,t,b = [get_voice(chord[i]) for i in 'satb']
     if s - a > 12:
         cost += 1
     if a - t > 12:
@@ -100,8 +116,8 @@ def voicing_parallel_intervals_cost(prev, this):
     for i in 'satb':
         for j in 'satb':
             if i != j:
-                if this[i][0] - prev[i][0] == this[j][0] - prev[j][0]:
-                    if (this[i][0] - this[j][0]) % 12 in [7, 0]:
+                if get_voice(this[i]) - get_voice(prev[i]) == get_voice(this[j]) - get_voice(prev[j]):
+                    if (get_voice(this[i]) - get_voice(this[j])) % 12 in [7, 0]:
                         cost += 10
     return cost
 

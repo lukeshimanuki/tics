@@ -37,7 +37,7 @@ class Staff(Widget):
         self.draw()
         self.bind(pos=self.draw, size=self.draw)
         self.beat = 0
-        self.display_history = 1
+        self.display_history = 3
 
     def draw(self, a=None, b=None):
         self.objects.clear()

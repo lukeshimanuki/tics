@@ -196,7 +196,9 @@ class MainWidget(BaseWidget):
             beat = self.beat_manager.data[i]
             for (voice, color, stem_direction) in self.ui.voice_info:
                 if voice in beat:
-                    self.ui.staff.add_note(i, beat[voice][0], color, stem_direction) 
+                    for idx, note in enumerate(beat[voice]):
+                        if note is not None and note != -1:
+                            self.ui.staff.add_note(i + idx / float(len(beat[voice])), note, color, stem_direction) 
         if self.ui.staff.beat != self.beat_manager.current_beat_index:
             self.ui.staff.beat = self.beat_manager.current_beat_index
             self.ui.staff.draw()
