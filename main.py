@@ -195,13 +195,11 @@ class MainWidget(BaseWidget):
         for i in range(0, self.beat_manager.current_beat_index + 1):
             beat = self.beat_manager.data[i]
             self.ui.staff.add_beat(i, beat)
-        if self.ui.staff.beat != self.beat_manager.current_beat_index:
-            self.ui.staff.beat = self.beat_manager.current_beat_index
-            self.ui.staff.draw()
 
     def on_beat(self):
         self.input.reset()
         self.draw_beats_on_staff()
+        self.ui.on_beat(self.beat_manager.current_beat_index)
 
     def update_beat_from_input(self, beat):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 

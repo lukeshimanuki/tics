@@ -37,7 +37,7 @@ class Staff(Widget):
         self.moving_objects = AnimGroup()
         self.bind(pos=self.draw, size=self.draw)
         self.beat = 0
-        self.display_history = 3
+        self.display_history = 2
         self.beat_groups = {}
         self.draw()
 
@@ -81,21 +81,33 @@ class Staff(Widget):
         self.moving_objects.add(beat_group)
         self.beat_groups[beat_id] = beat_group
 
+    def on_beat(self, beat):
+        if self.beat != beat:
+            self.beat = beat
+            for beat_id, beat_group in self.beat_groups.items():
+                if beat_id + self.display_history < self.beat:
+                    self.moving_objects.remove(beat_group)
+                    del self.beat_groups[beat_id]
+                elif beat_id < self.beat:
+                    for obj in beat_group.objects:
+                        obj.color.a = 0.4
+                elif beat_id == self.beat:
+                    for obj in beat_group.objects:
+                        obj.color.a = 1.0
+                else:
+                    for obj in beat_group.objects:
+                        obj.color.a = 0.7
+            self.draw()
+        self.last_beat = self.time
+
     def on_update(self, dt):
         self.time += dt
         self.moving_objects.on_update()
         self.translation.x -= dt * 90.0
-        #self.draw()
-
-
-# Alternate animation class that loops rather than becoming inactive.
-# For the loop to be smooth, the last frame should be the same as the first.
-class LoopAnim(KFAnim):
-    def eval(self, t):
-        return super(LoopAnim, self).eval(t % self.time[-1])
-
-    def is_active(self, t) :
-        return True
+        if self.beat in self.beat_groups:
+            for obj in self.beat_groups[self.beat].objects:
+                # TODO: Actually incorporate tempo.
+                obj.color.a = 1.0 - (self.time - self.last_beat) * 0.6
 
 
 class Notehead(InstructionGroup):
@@ -161,17 +173,7 @@ class VisualNote(InstructionGroup):
         self.time = 0
         self.start = 0
         self.pos = pos
-        self.on_update(0)
 
-    def on_update(self, dt):
-        self.notehead.on_update(dt)
-        self.time += dt
-        if self.pos[0] == 0:
-            if not self.start:
-                self.start = self.time
-            self.color.a = 1.0 - (self.time - self.start) * 0.8
-            self.ledger_color.a = self.color.a
-        #self.color.v = self.color_anim.eval(self.time)
 
 class LabelButton(ButtonBehavior, Label):
     pass
@@ -262,8 +264,8 @@ class UI(BoxLayout):
     def on_key_down(self, keycode, modifiers):
         self.part_selector.on_key_down(keycode, modifiers)
 
-    def on_beat(self, tick):
-        pass#print(tick)
+    def on_beat(self, beat):
+        self.staff.on_beat(beat)
 
     def on_update(self):
         self.staff.on_update(kivy.clock.Clock.frametime)
