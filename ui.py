@@ -2,6 +2,7 @@ from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Rectangle, Mesh, Line
 from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.core.image import Image
+from kivy.core.text import Label as CoreLabel
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.relativelayout import RelativeLayout
@@ -109,6 +110,9 @@ class Notehead(InstructionGroup):
 
 
 class VisualNote(InstructionGroup):
+    sharp_symbol = CoreLabel(text=u'\u266f', font_size=55, font_name="Code2001")
+    flat_symbol = CoreLabel(text=u'\u266d', font_size=55, font_name="Code2001")
+
     def __init__(self, staff, pos, pitch, duration, color, stem_direction):
         super(VisualNote, self).__init__()
 
@@ -146,15 +150,17 @@ class VisualNote(InstructionGroup):
         self.add(self.notehead)
 
         if accidental > 0:
-            # Draw a tiny up arrow to indicate a sharp.
-            self.add(Line(points=(-20, height-10, -20, height+10), width=1.5))
-            self.add(Line(points=(-25, height+5, -20, height+10), width=1.5))
-            self.add(Line(points=(-15, height+5, -20, height+10), width=1.5))
+            # Draw a sharp.
+            self.sharp_symbol.refresh()
+            texture = self.sharp_symbol.texture
+            w, h = self.sharp_symbol.texture.size
+            self.add(Rectangle(size=self.sharp_symbol.texture.size, pos=(-2*w, height - h/4), texture=texture))
         elif accidental < 0:
-            # Draw a tiny down arrow to indicate a flat.
-            self.add(Line(points=(-20, height-10, -20, height+10), width=1.5))
-            self.add(Line(points=(-25, height-5, -20, height-10), width=1.5))
-            self.add(Line(points=(-15, height-5, -20, height-10), width=1.5))
+            # Draw a flat.
+            self.flat_symbol.refresh()
+            texture = self.flat_symbol.texture
+            w, h = self.flat_symbol.texture.size
+            self.add(Rectangle(size=self.flat_symbol.texture.size, pos=(-2*w, height - h/4), texture=texture))
 
         self.add(PopMatrix())
 
