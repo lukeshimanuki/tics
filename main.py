@@ -67,8 +67,15 @@ class BeatManager:
         self.set_instruments(instruments)
 
         self.note_queue = multiprocessing.Queue()
-        audio_process = multiprocessing.Process(target=self.audio_process, args=(self.note_queue,))
+        print sys.platform
+        if sys.platform == 'darwin':
+        	# Use threads instead of processes (PyAudio on Mac doesn't support multiprocessing w/ forking)
+        	from threading import Thread
+        	audio_process = Thread(target=self.audio_process, args=(self.note_queue,))
+        else:
+        	audio_process = multiprocessing.Process(target=self.audio_process, args=(self.note_queue,))
         audio_process.start()
+        
 
     def audio_process(self, note_queue):
         # Initialize audio
