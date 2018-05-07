@@ -129,6 +129,7 @@ def voicing_parallel_intervals_cost(prev, this):
     return cost
 
 def voicing_cost(prev, this, next, beat):
+    voice_notes = [get_voice(this[part]) % 12 for part in 'satb']
     return sum([
         voicing_line_cost(prev[i], this[i])
         for i in 'satb'
@@ -142,6 +143,9 @@ def voicing_cost(prev, this, next, beat):
     ] + [
         voicing_spacing_cost(this, beat),
         voicing_parallel_intervals_cost(prev, this),
+    ] + [
+        3. if note not in voice_notes else 0
+        for note in notes(beat['harmony'])
     ]) * 5
 
 def enumerate_notes(prev, next, harmony, beat):
