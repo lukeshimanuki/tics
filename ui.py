@@ -137,8 +137,8 @@ class Notehead(InstructionGroup):
 
 
 class VisualNote(InstructionGroup):
-    sharp_symbol = CoreLabel(text=u'\u266f', font_size=55, font_name="Code2001")
-    flat_symbol = CoreLabel(text=u'\u266d', font_size=55, font_name="Code2001")
+    sharp_symbol = CoreLabel(text=u'\u266f', font_size=75, font_name="Code2001")
+    flat_symbol = CoreLabel(text=u'\u266d', font_size=75, font_name="Code2001")
 
     def __init__(self, staff, pos, pitch, duration, color, stem_direction):
         super(VisualNote, self).__init__()
