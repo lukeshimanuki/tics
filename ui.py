@@ -35,6 +35,7 @@ class Staff(Widget):
         self.accidental_type = accidental_type
         self.objects = InstructionGroup()
         self.time = 0
+        self._selected_beat = 0
         self.canvas.add(self.objects)
         self.moving_objects = AnimGroup()
         self.bind(pos=self.draw, size=self.draw)
@@ -42,6 +43,15 @@ class Staff(Widget):
         self.display_history = 2
         self.beat_groups = {}
         self.draw()
+
+    @property
+    def selected_beat(self):
+        return self._selected_beat
+
+    @selected_beat.setter
+    def selected_beat(self, selected_beat):
+        self._selected_beat = selected_beat
+        self.beat_highlighter.cpos = (450 + selected_beat * 90, self.beat_highlighter.cpos[1])
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -58,8 +68,13 @@ class Staff(Widget):
         self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 0.5),
                                     size=(self.spacing * 5, self.spacing * 7),
                                     texture=Image('data/bass.png').texture))
+        self.objects.add(Color(.7, .8, 1.0, 0.3))
+        # TODO: Fewer magic numbers.
+        self.beat_highlighter = CRectangle(cpos=(450 + self._selected_beat * 90, self.spacing * 6),
+                                    csize=(100, self.spacing * 24))
+        self.objects.add(self.beat_highlighter)
         self.objects.add(PushMatrix())
-        self.translation = Translate(self.size[0] * 1.5 - self.time * 90.0, self.spacing * 8)
+        self.translation = Translate(700 - self.time * 90.0, self.spacing * 8)
         self.objects.add(self.translation)
         self.objects.add(self.moving_objects)
         self.objects.add(PopMatrix())
@@ -193,7 +208,6 @@ class VisualNote(InstructionGroup):
 
         self.time = 0
         self.start = 0
-        self.pos = pos
 
 
 class LabelButton(ButtonBehavior, Label):
@@ -263,11 +277,13 @@ class UI(BoxLayout):
         self.bind(pos=self.draw, size=self.draw)
         self.draw()
 
-        self.info = Label(text = "text", valign='top', halign='left', font_size='20sp',
-                          size_hint=(1.0, 1.0), pos_hint={'center_x': -0.12, 'y': 1.0})
-        layout.add_widget(self.info)
+    @property
+    def selected_beat(self):
+        return self.staff.selected_beat
 
-        self.selected_beat = 0
+    @selected_beat.setter
+    def selected_beat(self, selected_beat):
+        self.staff.selected_beat = selected_beat
 
     def set_part_active(self, part, active):
         self.input.set_part_enabled(part, active)
@@ -290,31 +306,3 @@ class UI(BoxLayout):
 
     def on_update(self):
         self.staff.on_update(kivy.clock.Clock.frametime)
-
-        key_mapping = [
-            'C',
-            'C#',
-            'D',
-            'Eb',
-            'E',
-            'F',
-            'F#',
-            'G',
-            'Ab',
-            'A',
-            'Bb',
-            'B',
-            'C',
-        ]
-
-        self.info.text = "Selected Beat: {}\nHarmonies:\n{}".format(self.selected_beat + 1,
-            '\n'.join([
-                "{}: {} {}".format(
-                    i,
-                    beat['harmony'].split('|')[1] if 'harmony' in beat else '',
-                    beat['harmony'].split('|')[0] if 'harmony' in beat else '',
-                )
-                for i, beat in enumerate(self.data[self.staff.beat + 1:])
-            ])
-        )
-
