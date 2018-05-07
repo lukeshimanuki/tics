@@ -19,18 +19,15 @@ from input import Input, input_config
 from ui import UI
 from autocomplete import autocomplete, autocomplete_config
 
+config = __import__('classical')
+
 if len(sys.argv) >= 2:
     autocomplete_config(sys.argv[1])
     input_config(sys.argv[1])
-
-# Instrument groups
-PIANO = {'s': 0, 'a': 0, 't': 0, 'b': 0}
-STRING_QUARTET = {'s': 41, 'a': 41, 't': 42, 'b': 43} # 2 violins, viola, cello
-WOODWIND_QUARTET = {'s': 74, 'a': 69, 't': 72, 'b': 72} # flute, oboe, clarinet, bassoon
-SAX_QUARTET = {'s': 65, 'a': 66, 't': 67, 'b': 68} # soprano, alto, tenor, bari
+    config = __import__(sys.argv[1])
 
 class BeatManager:
-    def __init__(self, tempo=80, instruments=STRING_QUARTET, on_beat_callback=lambda : None):
+    def __init__(self, tempo=80, instruments={'s': 0, 'a': 0, 't': 0, 'b': 0}, on_beat_callback=lambda : None):
 
         # Data structure
         # This data structure describes a partial or full composition
@@ -87,7 +84,7 @@ class BeatManager:
             try:
                 channel, note, volume, start, length = note_queue.get(False)
                 tick = sched.get_tick()
-                channel = 0 # comment out if not luke
+                #channel = 0 # comment out if not luke
                 sched.post_at_tick(tick + start * 480, self._noteon, (channel, note, volume))
                 sched.post_at_tick(tick + length * 480, self._noteoff, (channel, note))
 
@@ -184,7 +181,7 @@ class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
 
-        self.beat_manager = BeatManager(tempo=60, on_beat_callback=self.on_beat)
+        self.beat_manager = BeatManager(tempo=60, on_beat_callback=self.on_beat, instruments=config._instruments)
         self.input = Input(self.update_beat_from_input)
 
         # Draw the UI

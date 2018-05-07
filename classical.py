@@ -1,3 +1,9 @@
+PIANO = {'s': 0, 'a': 0, 't': 0, 'b': 0}
+STRING_QUARTET = {'s': 41, 'a': 41, 't': 42, 'b': 43} # 2 violins, viola, cello
+WOODWIND_QUARTET = {'s': 74, 'a': 69, 't': 72, 'b': 72} # flute, oboe, clarinet, bassoon
+SAX_QUARTET = {'s': 65, 'a': 66, 't': 67, 'b': 68} # soprano, alto, tenor, bari
+_instruments = PIANO
+
 _major_keys = [
     'C',
     'C#',
