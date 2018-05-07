@@ -192,13 +192,9 @@ class MainWidget(BaseWidget):
 
     def draw_beats_on_staff(self):
         # Draw notes on the staff
-        for i in range(len(self.ui.staff.notes) / 4, self.beat_manager.current_beat_index + 1):
+        for i in range(0, self.beat_manager.current_beat_index + 1):
             beat = self.beat_manager.data[i]
-            for (voice, color, stem_direction) in self.ui.voice_info:
-                if voice in beat:
-                    for idx, note in enumerate(beat[voice]):
-                        if note is not None and note != -1:
-                            self.ui.staff.add_note(i + idx / float(len(beat[voice])), note, color, stem_direction) 
+            self.ui.staff.add_beat(i, beat)
         if self.ui.staff.beat != self.beat_manager.current_beat_index:
             self.ui.staff.beat = self.beat_manager.current_beat_index
             self.ui.staff.draw()
@@ -211,9 +207,7 @@ class MainWidget(BaseWidget):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
         self.beat_manager.data[selected_beat_index].update(beat)
         print("{}: {}".format(selected_beat_index, beat)) # [DEBUGGING]
-        for (voice, color, stem_direction) in self.ui.voice_info:
-            if voice in beat:
-                self.ui.staff.add_note(selected_beat_index, beat[voice][0], color, stem_direction)
+        self.ui.staff.add_beat(selected_beat_index, beat)
 
     def on_key_down(self, keycode, modifiers):
         self.ui.on_key_down(keycode, modifiers)

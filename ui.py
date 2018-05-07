@@ -31,13 +31,15 @@ class Staff(Widget):
     def __init__(self, accidental_type=-1, *args, **kwargs):
         super(Staff, self).__init__(*args, **kwargs)
         self.accidental_type = accidental_type
-        self.notes = []
         self.objects = InstructionGroup()
+        self.time = 0
         self.canvas.add(self.objects)
-        self.draw()
+        self.moving_objects = AnimGroup()
         self.bind(pos=self.draw, size=self.draw)
         self.beat = 0
         self.display_history = 3
+        self.beat_groups = {}
+        self.draw()
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -55,23 +57,32 @@ class Staff(Widget):
                                     size=(self.spacing * 5, self.spacing * 7),
                                     texture=Image('data/bass.png').texture))
         self.objects.add(PushMatrix())
-        # TODO: Make the x-component based on the current time.
-        self.translation = Translate(self.size[0] * 0.25, self.spacing * 8)
+        self.translation = Translate(self.size[0] * 1.5 - self.time * 90.0, self.spacing * 8)
         self.objects.add(self.translation)
-        self.moving_objects = AnimGroup()
-        for (beat, pitch, color, stem_direction) in self.notes:
-            relative_beat = beat - self.beat + self.display_history - 1
-            if relative_beat >= 0:
-                self.moving_objects.add(VisualNote(self, (relative_beat * 90, 0), pitch, 5.0, color, stem_direction))
         self.objects.add(self.moving_objects)
         self.objects.add(PopMatrix())
 
-    def add_note(self, beat, pitch, color, stem_direction):
-        relative_beat = beat - self.beat + self.display_history - 1
-        self.notes.append((beat, pitch, color, stem_direction))
-        self.moving_objects.add(VisualNote(self, (relative_beat * 90, 0), pitch, 5.0, color, stem_direction))
+    def add_beat(self, beat_id, beat):
+        if beat_id in self.beat_groups:
+            # We've seen this beat before.
+            if beat == self.beat_groups[beat_id]:
+                # No need to redraw.
+                return
+            self.moving_objects.remove(self.beat_groups[beat_id])
+        beat_group = AnimGroup()
+        for (voice, color, stem_direction) in UI.voice_info:
+            if voice in beat:
+                for idx, note in enumerate(beat[voice]):
+                    if note not in [None, -1]:
+                        beat_pos = beat_id + idx / float(len(beat[voice])) - self.display_history - 1
+                        # TODO: Make notes fade correctly, get rid of dead beat_group entries.
+                        beat_group.add(VisualNote(self, (beat_pos * 90, 0),
+                                                  note, beat_pos - self.beat, color, stem_direction))
+        self.moving_objects.add(beat_group)
+        self.beat_groups[beat_id] = beat_group
 
     def on_update(self, dt):
+        self.time += dt
         self.moving_objects.on_update()
         self.translation.x -= dt * 90.0
         #self.draw()
