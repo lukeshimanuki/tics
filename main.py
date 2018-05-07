@@ -199,7 +199,7 @@ class MainWidget(BaseWidget):
 
     def draw_beats_on_staff(self):
         # Draw notes on the staff
-        for i in range(0, self.beat_manager.current_beat_index + 1):
+        for i in range(self.ui.staff.beat - self.ui.staff.display_history, len(self.beat_manager.data)):
             beat = self.beat_manager.data[i]
             self.ui.staff.add_beat(i, beat)
 

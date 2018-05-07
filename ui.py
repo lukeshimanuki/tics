@@ -89,6 +89,7 @@ class Staff(Widget):
             container = AnimGroup()
             container.color = Color(1, 1, 1)
             container.add(container.color)
+            beat_pos = beat_id - self.display_history - 1
             container.add(Rectangle(pos=(beat_pos * 90 - texture_size[0] / 2, -self.spacing * 16), size=texture_size, texture=label.texture))
             beat_group.add(container)
 
@@ -127,16 +128,17 @@ class Staff(Widget):
 class Notehead(InstructionGroup):
     def __init__(self, pos, r, pitch):
         super(Notehead, self).__init__()
-        self.circle = CEllipse(cpos = pos, size = (2*r, 2*r), segments = 40)
-        self.add(self.circle)
+        self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
+                               texture=Image('data/quarter.png').texture)
+        self.add(self.rect)
 
     def on_update(self, dt):
         return True
 
 
 class VisualNote(InstructionGroup):
-    sharp_symbol = CoreLabel(text=u'\u266f', font_size=55, font_name="Code2001")
-    flat_symbol = CoreLabel(text=u'\u266d', font_size=55, font_name="Code2001")
+    sharp_symbol = CoreLabel(text=u'\u266f', font_size=75, font_name="Code2001")
+    flat_symbol = CoreLabel(text=u'\u266d', font_size=75, font_name="Code2001")
 
     def __init__(self, staff, pos, pitch, duration, color, stem_direction):
         super(VisualNote, self).__init__()
