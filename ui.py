@@ -7,6 +7,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
+from kivy.uix.label import CoreLabel
 from kivy.uix.button import ButtonBehavior
 
 from common.core import *
@@ -78,6 +79,18 @@ class Staff(Widget):
                         # TODO: Make notes fade correctly, get rid of dead beat_group entries.
                         beat_group.add(VisualNote(self, (beat_pos * 90, 0),
                                                   note, beat_pos - self.beat, color, stem_direction))
+        if 'harmony' in beat:
+            label = CoreLabel(text=beat['harmony'], font_size=25, color=(1, 1, 1, 1))
+            label.refresh()
+            texture = label.texture
+            texture_size = list(texture.size)
+            # A slight hack.
+            container = AnimGroup()
+            container.color = Color(1, 1, 1)
+            container.add(container.color)
+            container.add(Rectangle(pos=(beat_pos * 90 - texture_size[0] / 2, -self.spacing * 16), size=texture_size, texture=label.texture))
+            beat_group.add(container)
+
         self.moving_objects.add(beat_group)
         self.beat_groups[beat_id] = beat_group
 
