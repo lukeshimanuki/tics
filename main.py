@@ -6,6 +6,7 @@ import copy
 import multiprocessing
 import time
 import Queue
+import cPickle as pickle
 
 from kivy.uix.floatlayout import FloatLayout
 
@@ -49,7 +50,8 @@ class BeatManager:
         self.data = [{'s': (72,), 'a': (67,), 't': (64,), 'b': (60,), 'harmony': 'I|C'}, {}, {}, {}, {}, {}, {}]
 
         # Class constants
-        self.PADDING = 5
+        self.PADDING = 8
+        self.MAX_AUTOCOMPLETE = 5
 
         # Class variables
         self.on_beat_callback = on_beat_callback
@@ -174,7 +176,7 @@ class BeatManager:
             return
 
         # Fill in beat based on the beats immediately before & after
-        process = multiprocessing.Process(target=self.autocomplete_thread, args=(beat_index, copy.deepcopy(self.data[beat_index - 1 :])))
+        process = multiprocessing.Process(target=self.autocomplete_thread, args=(beat_index, copy.deepcopy(self.data[beat_index - 1 :beat_index - 1 + self.MAX_AUTOCOMPLETE])))
         process.start()
 
     def on_update(self):
@@ -207,6 +209,8 @@ class MainWidget(BaseWidget):
         layout.add_widget(self.ui)
         self.add_widget(layout)
 
+        self.record_index = None
+
     def draw_beats_on_staff(self):
         # Draw notes on the staff
         for i in range(self.ui.staff.beat - self.ui.staff.display_history, len(self.beat_manager.data)):
@@ -232,6 +236,29 @@ class MainWidget(BaseWidget):
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
             self.ui.selected_beat = min(self.ui.selected_beat + 1, self.beat_manager.PADDING - 2)
+        if keycode[1] == 'r':
+            if self.record_index is None:
+                self.record_index = self.beat_manager.current_beat_index + self.ui.selected_beat + 1
+            else:
+                pickle.dump(self.beat_manager.data[self.record_index:self.beat_manager.current_beat_index + self.ui.selected_beat + 2], open('recording.pickle', 'w'))
+                self.record_index = None
+        if keycode[1] == 'l':
+            data = pickle.load(open('recording.pickle', 'r'))
+            self.beat_manager.data += [{} for i in range(
+                self.beat_manager.current_beat_index + self.ui.selected_beat + 1 + len(data) - len(self.beat_manager.data)
+            )]
+            for i, (existing, recorded) in enumerate(zip(self.beat_manager.data[self.beat_manager.current_beat_index + self.ui.selected_beat + 1:], data)):
+                if 'manual' not in existing:
+                    existing['manual'] = set()
+                if 'manual' not in recorded:
+                    recorded['manual'] = set()
+                manual = {
+                    key: recorded[key]
+                    for key in recorded['manual']
+                }
+                existing.update(manual)
+                existing['manual'].update(recorded['manual'])
+                self.ui.staff.add_beat(self.beat_manager.current_beat_index + self.ui.selected_beat + 1 + i, existing)
 
     def on_key_up(self, keycode):
         self.input.on_key_up(keycode)
