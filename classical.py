@@ -240,8 +240,8 @@ _ranges = {
 
 def _dissonance(harmony):
     chord = harmony.split('|')[0]
-    return (1. if chord in {}
-        else .8 if chord in {'vii'}
+    return (1. if chord in ['N', 'It+6', 'Fr+6', 'Ger+6']
+        else .8 if chord in ['vii', 'ii']
         else .4 if chord.lower()
         else 0.
     )

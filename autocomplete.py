@@ -1,6 +1,18 @@
 import numpy as np
 import copy
 
+import collections
+import time
+prev_time = dict()
+runtime = collections.defaultdict(int)
+def atime(i):
+    global prev_time
+    #prev_time[i] = time.time()
+    pass
+def btime(i):
+    #runtime[i] += time.time() - prev_time[i]
+    pass
+
 config = __import__('classical')
 
 def autocomplete_config(name):
@@ -13,20 +25,42 @@ def transitions(harmony):
     chord, key = harmony.split('|')
     return config._transitions[key][chord]
 
-def notes(harmony):
+def notes_fn(harmony):
     chord, key = harmony.split('|')
     return {
         (config._keys[key] + note) % 12
         for note in config._notes[key][chord]
-    }
+    } if chord in config._notes[key] else []
+
+all_chords = {
+    chord
+    for key in config._keys
+    for chord in config._transitions[key]
+}
+harmonies = {
+    "{}|{}".format(chord, key)
+    for chord in all_chords
+    for key in config._keys
+}
+notes = {
+    harmony: notes_fn(harmony)
+    for harmony in harmonies
+}
+dissonance = {
+    harmony: config._dissonance(harmony)
+    for harmony in harmonies
+}
 
 def apply_transition(key, transition):
+    atime('apply_transition')
     key = key.split('|')[-1]
     if '|' in transition:
         new_chord, key_change = transition.split('|')
-        return "{}|{}".format(new_chord, config._key_change(key, key_change))
+        retval = "{}|{}".format(new_chord, config._key_change(key, key_change))
     else:
-        return "{}|{}".format(transition, key)
+        retval = "{}|{}".format(transition, key)
+    btime('apply_transition')
+    return retval
 
 def get_first(notes):
     for note in notes:
@@ -59,17 +93,20 @@ def enumerate_paths(data, idx, harmony):
         return [([], 0)]
     chord, key = harmony.split('|')
     beat = data[idx]
+    if 'harmony' in beat and harmony != beat['harmony']:
+        return [(harmony, float('inf'))]
     # dissonance coefficient
     coeff = -1. * beat['dissonance'] if 'dissonance' in beat else 0
+    dissonance_cost = dissonance[harmony] * coeff
+    hnotes = notes[harmony]
+    vcost = sum(
+        100 if part in beat and get_voice(beat[part]) % 12 not in hnotes else 0
+        for part in 'satb'
+    )
     return [
         (
-            [harmony] + tail,
-            new_cost + config._dissonance(harmony) * coeff + tail_cost
-            + (float('inf') if 'harmony' in beat and harmony != beat['harmony'] else 0)
-            + (100 if 's' in beat and get_voice(beat['s']) % 12 not in notes(harmony) else 0)
-            + (100 if 'a' in beat and get_voice(beat['a']) % 12 not in notes(harmony) else 0)
-            + (100 if 't' in beat and get_voice(beat['t']) % 12 not in notes(harmony) else 0)
-            + (100 if 'b' in beat and get_voice(beat['b']) % 12 not in notes(harmony) else 0)
+            tail if idx == 0 else harmony,
+            new_cost + dissonance_cost + tail_cost + vcost
         )
         for transition, new_cost in transitions(harmony).items()
         for tail, tail_cost in enumerate_paths(data, idx + 1, apply_transition(harmony, transition))
@@ -132,8 +169,9 @@ def voicing_parallel_intervals_cost(prev, this):
     return cost
 
 def voicing_cost(prev, this, next, beat):
+    atime('voicing_cost')
     voice_notes = [get_voice(this[part]) % 12 for part in 'satb']
-    return sum([
+    cost = sum([
         voicing_line_cost(prev[i], this[i])
         for i in 'satb'
         if i in prev
@@ -148,11 +186,22 @@ def voicing_cost(prev, this, next, beat):
         voicing_parallel_intervals_cost(prev, this),
     ] + [
         3. if note not in voice_notes else 0
-        for note in notes(beat['harmony'])
+        for note in notes[beat['harmony']]
     ]) * 5
+    btime('voicing_cost')
+    return cost
 
 def enumerate_notes(prev, next, harmony, beat):
-    return [
+    atime('enumerate_notes')
+    hranges = {
+        part: [
+            note
+            for note in config._ranges[part]
+            if note % 12 in notes[harmony]
+        ]
+        for part in 'satb'
+    }
+    l = [
         ({
             's': (s,),
             'a': (a,),
@@ -164,15 +213,13 @@ def enumerate_notes(prev, next, harmony, beat):
             't': (t,),
             'b': (b,),
         }, next, beat))
-        for s in config._ranges['s']
-        for a in config._ranges['a']
-        for t in config._ranges['t']
-        for b in config._ranges['b']
-        if  s % 12 in notes(harmony)
-        and a % 12 in notes(harmony)
-        and t % 12 in notes(harmony)
-        and b % 12 in notes(harmony)
+        for s in hranges['s']
+        for a in hranges['a']
+        for t in hranges['t']
+        for b in hranges['b']
     ]
+    btime('enumerate_notes')
+    return l
 
 def decorate(base, chord, scale):
     if np.random.randint(0,100) < 20:
@@ -185,6 +232,8 @@ def decorate(base, chord, scale):
     return [base]
 
 def autocomplete(data):
+    atime('autocomplete')
+
     # retain rhythm
     if 'mel_rhythm' not in data[1]:
         if 'mel_rhythm' in data[0]:
@@ -198,33 +247,40 @@ def autocomplete(data):
         else:
             data[1]['acc_rhythm'] = {'a': (True,), 't': (True,), 'b': (True,)}
 
+    atime(1)
     # find path in key/chord graph
     paths, costs = zip(*enumerate_paths(data, 0, data[0]['harmony']))
     np_costs = np.array(costs)
     probs = softmax(-np_costs)
     path_idx = np.random.choice(np.arange(len(paths)), p=probs)
     path = paths[path_idx]
+    btime(1)
 
     # set next key/chord
-    harmony = path[1]
+    harmony = path
     if 'harmony' not in data[1]:
         data[1]['harmony'] = harmony
 
+    atime(2)
     # pick notes based on key/chord
     voicings, costs = zip(*enumerate_notes(data[0], data[2], harmony, data[1]))
     np_costs = np.array(costs)
     probs = softmax(-np_costs)
     voicings_idx = np.random.choice(np.arange(len(voicings)), p=probs)
     voicing = voicings[voicings_idx]
+    btime(2)
 
     # set notes
     data[1] = dict(voicing.items() + data[1].items())
 
     # decorations
-    decorated = tuple(decorate(get_first(data[1]['s']), notes(data[1]['harmony']), config._scale(data[1]['harmony'].split('|')[1])))
+    atime(3)
+    decorated = tuple(decorate(get_first(data[1]['s']), notes[data[1]['harmony']], config._scale(data[1]['harmony'].split('|')[1])))
     data[1]['s'] = decorated
+    btime(3)
 
     # apply rhythm to voices
+    atime(4)
     print(data)
     for part in 'atb':
         p_notes = data[1][part]
@@ -237,6 +293,14 @@ def autocomplete(data):
         s_notes[idx % len(s_notes)] if value == True else -1 if value == -1 else None
         for idx,value in enumerate(data[1]['mel_rhythm'])
     )
+    btime(4)
+
+    btime('autocomplete')
+
+    #print("RUNTIME\n-------")
+    #for i, t in runtime.items():
+    #    print("{}: {}".format(i, t))
+    #print("-------")
 
     return data
 
