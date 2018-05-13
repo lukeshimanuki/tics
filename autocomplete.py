@@ -247,6 +247,12 @@ def autocomplete(data):
         else:
             data[1]['acc_rhythm'] = {'a': (True,), 't': (True,), 'b': (True,)}
 
+    # retain dissonance / spacing
+    if 'dissonance' not in data[1] and 'dissonance' in data[0]:
+        data[1]['dissonance'] = data[0]['dissonance']
+    if 'spacing' not in data[1] and 'spacing' in data[0]:
+        data[1]['spacing'] = data[0]['spacing']
+
     atime(1)
     # find path in key/chord graph
     paths, costs = zip(*enumerate_paths(data, 0, data[0]['harmony']))
