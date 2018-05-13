@@ -247,7 +247,7 @@ class PartSelector(BoxLayout):
                 self.set_part_active(part, checkbox_active)
 
     def on_key_down(self, keycode, modifiers):
-        part = lookup(keycode[1], 'satbh', ('s', 'a', 't', 'b', 'harmony'))
+        part = lookup(keycode[1], 'satbhdwmc', ('s', 'a', 't', 'b', 'harmony', 'dissonance', 'spacing', 'mel_rhythm', 'acc_rhythm'))
         if part:
             self.checkboxes[part]._do_press()
 
