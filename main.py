@@ -27,6 +27,8 @@ if len(sys.argv) >= 2:
     input_config(sys.argv[1])
     config = __import__(sys.argv[1])
 
+QUIT = multiprocessing.Queue()
+
 class BeatManager:
     def __init__(self, tempo=80, instruments={'s': 0, 'a': 0, 't': 0, 'b': 0}, on_beat_callback=lambda : None):
 
@@ -102,6 +104,12 @@ class BeatManager:
             except Queue.Empty:
                 audio.on_update()
                 time.sleep(.01)
+            try:
+                QUIT.get(False)
+                QUIT.put(None)
+                return
+            except Queue.Empty:
+                pass
 
     def _noteon(self, tick, (channel, note, volume)):
         self.synth.noteon(channel, note, volume)
@@ -273,4 +281,5 @@ class MainWidget(BaseWidget):
 
 if __name__ == "__main__":
     run(MainWidget)
+    QUIT.put(None)
 
