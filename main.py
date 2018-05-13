@@ -120,6 +120,10 @@ class BeatManager:
         return True
 
     def on_beat(self, tick, _ = None):
+        # fill beat if not already autocompleted
+        if not self.beat_is_filled(self.current_beat_index):
+            self.data[self.current_beat_index].update(self.data[self.current_beat_index - 1])
+
         self.play_next_beat()
         self.sched.post_at_tick(tick + 480, self.on_beat)
         self.on_beat_callback()
@@ -184,7 +188,8 @@ class BeatManager:
         try:
             beat, autocomplete_data, random_state = self.autocomplete_data.get(False)
             np.random.set_state(random_state)
-            self.data[beat].update(autocomplete_data)
+            if not self.beat_is_filled(beat):
+                self.data[beat].update(autocomplete_data)
         except Queue.Empty:
             pass
 
