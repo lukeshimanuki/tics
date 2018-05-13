@@ -58,8 +58,10 @@ class BeatManager:
         self.current_playing_notes = set()
         self.autocomplete_data = multiprocessing.Queue()
 
+        self.clock = Clock()
+        self.last_tick = 0
         self.tempo_map  = SimpleTempoMap(tempo)
-        self.sched = Scheduler(Clock(), self.tempo_map)
+        self.sched = Scheduler(self.clock, self.tempo_map)
         self.sched.post_at_tick(480, self.on_beat)
 
         self.synth = Synth('data/FluidR3_GM.sf2')
@@ -174,6 +176,9 @@ class BeatManager:
     def on_update(self):
         #self.audio.on_update()
         self.sched.on_update()
+        tick = self.tempo_map.time_to_tick(self.clock.get_time())
+        self.tick_delta = tick - self.last_tick
+        self.last_tick = tick
 
         # Fill in any autocompleted beats
         try:
@@ -192,7 +197,7 @@ class MainWidget(BaseWidget):
         self.input = Input(self.update_beat_from_input)
 
         # Draw the UI
-        self.ui = UI(self.beat_manager.data, self.input, spacing=30)
+        self.ui = UI(self.input, spacing=30)
         layout = FloatLayout(size=Window.size)
         layout.add_widget(self.ui)
         self.add_widget(layout)
@@ -209,7 +214,7 @@ class MainWidget(BaseWidget):
         self.ui.on_beat(self.beat_manager.current_beat_index)
 
     def update_beat_from_input(self, beat):
-        selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat # TODO: make this whichever beat index is actually selected by UI 
+        selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat
         self.beat_manager.data[selected_beat_index].update(beat)
         print("{}: {}".format(selected_beat_index, beat)) # [DEBUGGING]
         self.ui.staff.add_beat(selected_beat_index, beat)
@@ -232,7 +237,7 @@ class MainWidget(BaseWidget):
     def on_update(self):
         self.beat_manager.on_update()
         self.input.on_update()
-        self.ui.on_update()
+        self.ui.on_update(self.beat_manager.tick_delta)
 
 if __name__ == "__main__":
     run(MainWidget)

@@ -15,7 +15,7 @@ from common.core import *
 from common.gfxutil import KFAnim, AnimGroup, CEllipse, CRectangle
 from common.gfxutil import topleft_label
 
-# TODO: Barlines, stems, standard accidentals.
+# TODO: Barlines, key signatures, other types of notes?
 
 def pitch_to_staff(pitch, accidental_type=1):
     # Convert a pitch to a height in treble cleff. E4 is 0, as it corresponds
@@ -34,7 +34,7 @@ class Staff(Widget):
         super(Staff, self).__init__(*args, **kwargs)
         self.accidental_type = accidental_type
         self.objects = InstructionGroup()
-        self.time = 0
+        self.tick = 0
         self._selected_beat = 0
         self.canvas.add(self.objects)
         self.moving_objects = AnimGroup()
@@ -51,7 +51,7 @@ class Staff(Widget):
     @selected_beat.setter
     def selected_beat(self, selected_beat):
         self._selected_beat = selected_beat
-        self.beat_highlighter.cpos = (450 + selected_beat * 90, self.beat_highlighter.cpos[1])
+        self.beat_highlighter.cpos = (470 + selected_beat * 90, self.beat_highlighter.cpos[1])
 
     def draw(self, a=None, b=None):
         self.objects.clear()
@@ -70,11 +70,11 @@ class Staff(Widget):
                                     texture=Image('data/bass.png').texture))
         self.objects.add(Color(.7, .8, 1.0, 0.3))
         # TODO: Fewer magic numbers.
-        self.beat_highlighter = CRectangle(cpos=(450 + self._selected_beat * 90, self.spacing * 6),
+        self.beat_highlighter = CRectangle(cpos=(470 + self._selected_beat * 90, self.spacing * 6),
                                     csize=(100, self.spacing * 24))
         self.objects.add(self.beat_highlighter)
         self.objects.add(PushMatrix())
-        self.translation = Translate(700 - self.time * 90.0, self.spacing * 8)
+        self.translation = Translate(700 - self.tick * 90.0 / 480.0, self.spacing * 8)
         self.objects.add(self.translation)
         self.objects.add(self.moving_objects)
         self.objects.add(PopMatrix())
@@ -128,16 +128,14 @@ class Staff(Widget):
                     for obj in beat_group.objects:
                         obj.color.a = 0.7
             self.draw()
-        self.last_beat = self.time
 
     def on_update(self, dt):
-        self.time += dt
+        self.tick += dt
         self.moving_objects.on_update()
-        self.translation.x -= dt * 90.0
+        self.translation.x -= dt * 90.0 / 480.0
         if self.beat in self.beat_groups:
             for obj in self.beat_groups[self.beat].objects:
-                # TODO: Actually incorporate tempo.
-                obj.color.a = 1.0 - (self.time - self.last_beat) * 0.6
+                obj.color.a -= dt * 0.6 / 480.0
 
 
 class Notehead(InstructionGroup):
@@ -261,10 +259,9 @@ class UI(BoxLayout):
                   ('t', (0, 1, 0), 'up'),
                   ('b', (0, 0, 1), 'down')]
 
-    def __init__(self, data, input, *args, **kwargs):
+    def __init__(self, input, *args, **kwargs):
         super(UI, self).__init__(*args, orientation='horizontal', **kwargs)
 
-        self.data = data
         self.input = input
 
         self.part_selector = PartSelector(self.set_part_active, pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
@@ -304,5 +301,5 @@ class UI(BoxLayout):
     def on_beat(self, beat):
         self.staff.on_beat(beat)
 
-    def on_update(self):
-        self.staff.on_update(kivy.clock.Clock.frametime)
+    def on_update(self, dt):
+        self.staff.on_update(dt)
