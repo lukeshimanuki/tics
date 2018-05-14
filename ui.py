@@ -71,8 +71,12 @@ class Staff(Widget):
         self.objects.add(CRectangle(cpos=(self.spacing, self.spacing * 0.5),
                                     size=(self.spacing * 5, self.spacing * 7),
                                     texture=Image('data/bass.png').texture))
-        self.objects.add(Color(.7, .8, 1.0, 0.3))
         # TODO: Fewer magic numbers.
+        self.objects.add(Color(1, 1, 1))
+        now_pos = 470 - 90 - 45
+        print(self._selected_beat, self.display_history)
+        self.objects.add(Line(points=(now_pos, -self.spacing * 4, now_pos, self.spacing * 16)))
+        self.objects.add(Color(.7, .8, 1.0, 0.3))
         self.beat_highlighter = CRectangle(cpos=(470 + self._selected_beat * 90, self.spacing * 6),
                                     csize=(100, self.spacing * 24))
         self.objects.add(self.beat_highlighter)
@@ -93,12 +97,17 @@ class Staff(Widget):
         for (voice, color, stem_direction, clef) in UI.voice_info:
             if voice in beat:
                 for idx, note in enumerate(beat[voice]):
+                    # TODO: rests, rhythmic grouping
                     if note not in [None, -1]:
                         beat_pos = beat_id + idx / float(len(beat[voice])) - self.display_history - 1
                         clef_bounds = (0, 10) if clef == 'treble' else (-10, -2)
                         manual = 'manual' in beat and voice in beat['manual']
-                        beat_group.add(VisualNote(self, (beat_pos * 90, 0), note, beat_pos -
-                                                  self.beat, color, stem_direction, clef_bounds, manual))
+                        value = 1 if len(beat[voice]) > 1 else 2
+                        beat_group.add(VisualNote(self, (beat_pos * 90, 0),
+                                                  note, value, beat_pos -
+                                                  self.beat, color,
+                                                  stem_direction, clef_bounds,
+                                                  manual))
         label = CoreLabel(text="{}{}{}{}{}".format(
             "{}\n".format(beat['harmony']) if 'harmony' in beat else '',
             "|{}|\n".format(' ' * min(8, int((beat['spacing'] + 1) * 8))) if 'spacing' in beat and 'manual' in beat and 'spacing' in beat['manual'] else '',
@@ -156,28 +165,30 @@ class Staff(Widget):
 
 
 class Notehead(InstructionGroup):
-    def __init__(self, pos, r, color, pitch, stem_direction, outline=False):
+    def __init__(self, pos, r, color, pitch, value, stem_direction, outline=False):
         super(Notehead, self).__init__()
         if stem_direction == 'down':
             self.add(PushMatrix())
             self.add(Rotate(angle=180, origin=(pos[0], pos[1])))
-        self.add(Color(1, 1, 1))
+        image_src = ['data/quarter.png', 'data/halfnote.png'][value - 1]
+        self.outline_color = Color(1, 1, 1)
         if outline:
+            self.add(self.outline_color)
             self.add(PushMatrix())
             self.add(Scale(1.2, origin=(pos[0], pos[1])))
-        self.outline = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
-                               texture=Image('data/quarter.png').texture)
-        self.add(self.outline)
-        if outline:
+            self.outline = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
+                               texture=Image(image_src).texture)
+            self.add(self.outline)
             self.add(PopMatrix())
-        self.add(Color(*color))
+        self.add(color)
         self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
-                               texture=Image('data/quarter.png').texture)
+                               texture=Image(image_src).texture)
         self.add(self.rect)
         if stem_direction == 'down':
             self.add(PopMatrix())
 
     def on_update(self, dt):
+        self.outline_color.a = self.color.a
         return True
 
 
@@ -185,7 +196,7 @@ class VisualNote(InstructionGroup):
     sharp_symbol = CoreLabel(text=u'\u266f', font_size=75, font_name="Code2001")
     flat_symbol = CoreLabel(text=u'\u266d', font_size=75, font_name="Code2001")
 
-    def __init__(self, staff, pos, pitch, duration, color, stem_direction, clef_bounds, outline):
+    def __init__(self, staff, pos, pitch, value, duration, color, stem_direction, clef_bounds, outline):
         super(VisualNote, self).__init__()
 
         self.staff = staff
@@ -203,18 +214,16 @@ class VisualNote(InstructionGroup):
             lines = range(line, clef_bounds[0])
         else:
             lines = range(clef_bounds[1], line + 1)
-        print(clef_bounds, line, lines)
         for l in lines:
             if l % 2 == 0:
                 height = l * staff.spacing
                 self.add(Line(points=(-25, height, 25, height)))
 
         self.color = Color(*color)
-        self.add(self.color)
 
         # Draw the note.
         height = line * staff.spacing
-        self.notehead = Notehead((0, height), 10, color, pitch, stem_direction, outline)
+        self.notehead = Notehead((0, height), 10, self.color, pitch, value, stem_direction, outline)
         self.add(self.notehead)
 
         if accidental > 0:
