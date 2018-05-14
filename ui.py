@@ -96,6 +96,13 @@ class Staff(Widget):
         beat_group = AnimGroup()
         for (voice, color, stem_direction, clef) in UI.voice_info:
             if voice in beat:
+                reference = {'s': 77, 'a': 64, 't': 57, 'b': 43}[voice]
+                notes = [note for note in beat[voice] if note not in [None, -1]]
+                if notes:
+                    reference = notes[0]
+                if len(beat[voice]) > 2:
+                    beat_start = beat_id - self.display_history - 1
+                    beat_group.add(Tuplet(self, (beat_start * 90, 0), len(beat[voice]), reference, color))
                 for idx, note in enumerate(beat[voice]):
                     # TODO: rests, rhythmic grouping
                     if note != -1:
@@ -104,10 +111,6 @@ class Staff(Widget):
                         manual = 'manual' in beat and voice in beat['manual']
                         value = 1 if len(beat[voice]) > 1 else 2
                         if note is None:
-                            reference = {'s': 77, 'a': 64, 't': 57, 'b': 43}[voice]
-                            notes = [note for note in beat[voice] if note not in [None, -1]]
-                            if notes:
-                                reference = notes[0]
                             if idx > 0 and beat[voice][idx-1] not in [None, -1]:
                                 reference = beat[voice][idx-1]
                             elif idx + 1 < len(beat[voice]) and beat[voice][idx+1] not in [None, -1]:
@@ -286,6 +289,27 @@ class VisualRest(InstructionGroup):
         self.add(self.color)
         self.rect = CRectangle(cpos=(0, height), csize=(2.5*8, 7*8),
                                texture=Image('data/quarter_rest.png').texture)
+        self.add(self.rect)
+        self.add(PopMatrix())
+
+
+class Tuplet(InstructionGroup):
+    def __init__(self, staff, pos, number, pitch, color):
+        super(Tuplet, self).__init__()
+
+        self.staff = staff
+
+        self.add(PushMatrix())
+        self.add(Translate(*pos))
+        line, _ = pitch_to_staff(pitch, staff.accidental_type)
+
+        self.color = Color(*color)
+
+        # Draw the tuplet.
+        height = line * staff.spacing
+        self.add(self.color)
+        self.rect = CRectangle(cpos=(35, height + 80), csize=(90, 20),
+                               texture=Image('data/tuplet.png').texture)
         self.add(self.rect)
         self.add(PopMatrix())
 
