@@ -319,10 +319,14 @@ class MainWidget(BaseWidget):
             tempo = self.beat_manager.current_tempo()
             self.beat_manager.set_tempo(tempo + 10)
             self.ui.tempo.text = 'Tempo : %d\n' % self.beat_manager.tempo
+            if self.beat_manager.improv:
+                self.ui.tempo.text += "Improv Mode Enabled"
         if keycode[1] == 'down':
             tempo = self.beat_manager.current_tempo()
             self.beat_manager.set_tempo(tempo - 10)
             self.ui.tempo.text = 'Tempo : %d\n' % self.beat_manager.tempo
+            if self.beat_manager.improv:
+                self.ui.tempo.text += "Improv Mode Enabled"
         if keycode[1] == 'left':
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
@@ -331,6 +335,9 @@ class MainWidget(BaseWidget):
             self.beat_manager.toggle_pause()
         if keycode[1] == 'i':
             self.beat_manager.toggle_improv()
+            self.ui.tempo.text = 'Tempo : %d\n' % self.beat_manager.tempo
+            if self.beat_manager.improv:
+                self.ui.tempo.text += "Improv Mode Enabled"
         if keycode[1] == 'r':
             if self.record_index is None:
                 self.record_index = self.beat_manager.current_beat_index + self.ui.selected_beat + 1
