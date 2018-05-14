@@ -15,12 +15,6 @@ def btime(i):
 
 config = __import__('jazz')
 
-def autocomplete_config(name):
-    global config
-    config = __import__(name)
-
-np.random.seed()
-
 def transitions(harmony):
     chord, key = harmony.split('|')
     return config._transitions[key][chord]
@@ -31,6 +25,17 @@ def notes_fn(harmony):
         (config._keys[key] + note) % 12
         for note in config._notes[key][chord]
     } if chord in config._notes[key] else []
+
+def apply_transition(key, transition):
+    atime('apply_transition')
+    key = key.split('|')[-1]
+    if '|' in transition:
+        new_chord, key_change = transition.split('|')
+        retval = "{}|{}".format(new_chord, config._key_change(key, key_change))
+    else:
+        retval = "{}|{}".format(transition, key)
+    btime('apply_transition')
+    return retval
 
 all_chords = {
     chord
@@ -51,16 +56,34 @@ dissonance = {
     for harmony in harmonies
 }
 
-def apply_transition(key, transition):
-    atime('apply_transition')
-    key = key.split('|')[-1]
-    if '|' in transition:
-        new_chord, key_change = transition.split('|')
-        retval = "{}|{}".format(new_chord, config._key_change(key, key_change))
-    else:
-        retval = "{}|{}".format(transition, key)
-    btime('apply_transition')
-    return retval
+def autocomplete_config(name):
+    global config
+    global all_chords
+    global harmonies
+    global notes
+    global dissonance
+    config = __import__(name)
+    all_chords = {
+        chord
+        for key in config._keys
+        for chord in config._transitions[key]
+    }
+    harmonies = {
+        "{}|{}".format(chord, key)
+        for chord in all_chords
+        for key in config._keys
+    }
+    notes = {
+        harmony: notes_fn(harmony)
+        for harmony in harmonies
+    }
+    dissonance = {
+        harmony: config._dissonance(harmony)
+        for harmony in harmonies
+    }
+
+
+np.random.seed()
 
 def get_first(notes):
     for note in notes:
