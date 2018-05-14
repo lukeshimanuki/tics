@@ -32,7 +32,7 @@ class Input(InstructionGroup):
             self.midi_in = rtmidi.MidiIn(name='TICS')
             available_ports = self.midi_in.get_ports()
             print(available_ports)
-            self.midi_in.open_port(24)
+            self.midi_in.open_port(1)
             print('Opened MIDI port.')
             self.last_msg = None
             def midi_callback(msgtime, _ = None):
