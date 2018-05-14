@@ -75,6 +75,9 @@ class BeatManager:
         self.set_instruments(instruments)
 
         self.note_queue = multiprocessing.Queue()
+        self.note_on = multiprocessing.Queue()
+        self.note_off = multiprocessing.Queue()
+        self.tempo_queue = multiprocessing.Queue()
         print sys.platform
         if sys.platform == 'darwin':
         	# Use threads instead of processes (PyAudio on Mac doesn't support multiprocessing w/ forking)
@@ -87,13 +90,16 @@ class BeatManager:
     def set_tempo(self, tempo):
         self.tempo = tempo
         self.tempo_map.set_tempo(tempo, self.clock.get_time())
+        self.tempo_queue.put(tempo)
 
     def toggle_pause(self):
         self.paused = not self.paused
         if self.paused:
             self.tempo_map.set_tempo(0, self.clock.get_time())
+            self.tempo_queue.put(1e-9)
         else:
             self.set_tempo(self.tempo)
+            self.tempo_queue.put(self.tempo)
 
     def audio_process(self, note_queue):
         # Initialize audio
@@ -104,29 +110,56 @@ class BeatManager:
         audio.set_generator(sched)
         sched.set_generator(self.synth)
 
+        active_notes = set()
+
         while True:
             try:
                 channel, note, volume, start, length = note_queue.get(False)
                 tick = sched.get_tick()
-                #channel = 0 # comment out if not luke
                 sched.post_at_tick(tick + start * 480, self._noteon, (channel, note, volume))
                 sched.post_at_tick(tick + length * 480, self._noteoff, (channel, note))
-
             except Queue.Empty:
-                audio.on_update()
-                time.sleep(.01)
+                pass
+
+            try:
+                channel, note = self.note_off.get(False)
+                self.synth.noteoff(channel, note)
+                if (channel, note) in active_notes:
+                    active_notes.remove((channel, note))
+            except Queue.Empty:
+                pass
+
+            try:
+                channel, note, volume = self.note_on.get(False)
+                self.synth.noteon(channel, note, volume)
+                active_notes.add((channel, note))
+            except Queue.Empty:
+                pass
+
+            try:
+                tempo = self.tempo_queue.get(False)
+                if tempo < 1e-3:
+                    for channel, note in active_notes:
+                        self.synth.noteoff(channel, note)
+                    active_notes = set()
+                self.tempo_map.set_tempo(tempo, self.clock.get_time())
+            except Queue.Empty:
+                pass
+
             try:
                 QUIT.get(False)
                 QUIT.put(None)
                 return
             except Queue.Empty:
-                pass
+                audio.on_update()
+                time.sleep(.01)
 
     def _noteon(self, tick, (channel, note, volume)):
-        self.synth.noteon(channel, note, volume)
+        self.note_on.put((channel, note, volume))
 
-    def _noteoff(self, tick, (channel, note)):
-        self.synth.noteoff(channel, note)
+    def _noteoff(self, tick, (channel, note), sleep=0):
+        time.sleep(sleep)
+        self.note_off.put((channel, note))
 
     def set_instruments(self, instruments):
         self.instruments = instruments
@@ -254,6 +287,14 @@ class MainWidget(BaseWidget):
             self.ui.set_accidental_type(1)
 
     def update_beat_from_input(self, beat):
+        if self.beat_manager.paused:
+            for channel, part in enumerate('satb'):
+                if part in beat and 'manual' in beat and part in beat['manual']:
+                    note = beat[part][0]
+                    self.beat_manager.note_on.put((channel, note, 100))
+                    process = multiprocessing.Process(target=self.beat_manager._noteoff, args=(0, (channel, note), .5))
+                    process.start()
+
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat
         if 'manual' in beat and 'manual' in self.beat_manager.data[selected_beat_index]:
             beat['manual'].update(self.beat_manager.data[selected_beat_index]['manual'])
