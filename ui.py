@@ -311,6 +311,11 @@ class Tuplet(InstructionGroup):
         self.rect = CRectangle(cpos=(35, height + 80), csize=(90, 20),
                                texture=Image('data/tuplet.png').texture)
         self.add(self.rect)
+        num_label = CoreLabel(text=str(number), font_size=20)
+        num_label.refresh()
+        self.label = CRectangle(cpos=(35, height + 80), csize=num_label.texture.size,
+                               texture=num_label.texture)
+        self.add(self.label)
         self.add(PopMatrix())
 
 
