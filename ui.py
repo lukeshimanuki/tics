@@ -169,7 +169,7 @@ class Staff(Widget):
                         obj.color.a = 1.0
                 else:
                     for obj in beat_group.objects:
-                        obj.color.a = 0.7
+                        obj.color.a = 0.5
             self.draw()
 
     def on_update(self, dt):
@@ -197,6 +197,7 @@ class Notehead(InstructionGroup):
                                texture=Image(image_src).texture)
             self.add(self.outline)
             self.add(PopMatrix())
+        self.color = color
         self.add(color)
         self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
                                texture=Image(image_src).texture)
@@ -206,7 +207,6 @@ class Notehead(InstructionGroup):
 
     def on_update(self, dt):
         self.outline_color.a = self.color.a
-        return True
 
 
 class VisualNote(InstructionGroup):
@@ -257,6 +257,9 @@ class VisualNote(InstructionGroup):
             self.add(Rectangle(size=self.flat_symbol.texture.size, pos=(-2*w, height - h/4), texture=texture))
 
         self.add(PopMatrix())
+
+    def on_update(self, dt):
+        self.notehead.on_update(dt)
 
 
 class VisualRest(InstructionGroup):
