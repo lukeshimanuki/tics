@@ -110,11 +110,10 @@ class BeatManager:
     def audio_process(self, note_queue):
         # Initialize audio
         audio = Audio(2)
-        sched = AudioScheduler(self.tempo_map)
+        sched = Scheduler(Clock(), self.tempo_map)
 
         # Connect scheduler into audio system
-        audio.set_generator(sched)
-        sched.set_generator(self.synth)
+        audio.set_generator(self.synth)
 
         active_notes = set()
 
@@ -158,6 +157,7 @@ class BeatManager:
                 return
             except Queue.Empty:
                 audio.on_update()
+                sched.on_update()
                 time.sleep(.01)
 
     def _noteon(self, tick, (channel, note, volume)):
