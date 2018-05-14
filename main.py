@@ -7,6 +7,7 @@ import multiprocessing
 import time
 import Queue
 import cPickle as pickle
+from midiutil import MidiFile
 
 from kivy.uix.floatlayout import FloatLayout
 
@@ -359,6 +360,41 @@ class MainWidget(BaseWidget):
                 existing.update(manual)
                 existing['manual'].update(recorded['manual'])
                 self.ui.staff.add_beat(self.beat_manager.current_beat_index + self.ui.selected_beat + 1 + i, existing)
+
+        if keycode[1] == 'y':
+            midi_file = MidiFile.MIDIFile(4)
+            midi_file.addTrackName(0,0,"Soprano")
+            midi_file.addTrackName(1,0,"Alto")
+            midi_file.addTrackName(2,0,"Tenor")
+            midi_file.addTrackName(3,0,"Bass")
+            tempo = 120
+            midi_file.addTempo(0,0,tempo)
+            midi_file.addTempo(1,0,tempo)
+            midi_file.addTempo(2,0,tempo)
+            midi_file.addTempo(3,0,tempo)
+
+            data = pickle.load(open('recording.pickle', 'r'))
+            for beat_idx, beat in enumerate(data):
+                for track, part in enumerate('satb'):
+                    if part in beat:
+                        num = len(beat[part])
+                        notes = []
+                        starts = []
+                        lengths = []
+                        for idx, note in enumerate(beat[part]):
+                            if note == -1:
+                                lengths[-1] += 1
+                            elif note == None:
+                                pass
+                            else:
+                                notes.append(note)
+                                starts.append(idx)
+                                lengths.append(1)
+                        for idx, note in enumerate(notes):
+                            midi_file.addNote(track, 0, note, beat_idx + float(starts[idx]) / num, float(lengths[idx]) / num, 127)
+            diskfile = open("recording.mid", 'wb')
+            midi_file.writeFile(diskfile)
+            diskfile.close()
 
     def on_key_up(self, keycode):
         self.input.on_key_up(keycode)
