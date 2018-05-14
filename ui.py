@@ -90,14 +90,15 @@ class Staff(Widget):
                 return
             self.moving_objects.remove(self.beat_groups[beat_id])
         beat_group = AnimGroup()
-        for (voice, color, stem_direction) in UI.voice_info:
+        for (voice, color, stem_direction, clef) in UI.voice_info:
             if voice in beat:
                 for idx, note in enumerate(beat[voice]):
                     if note not in [None, -1]:
                         beat_pos = beat_id + idx / float(len(beat[voice])) - self.display_history - 1
-                        # TODO: Make notes fade correctly, get rid of dead beat_group entries.
-                        beat_group.add(VisualNote(self, (beat_pos * 90, 0),
-                                                  note, beat_pos - self.beat, color, stem_direction))
+                        clef_bounds = (0, 10) if clef == 'treble' else (-10, -2)
+                        manual = 'manual' in beat and voice in beat['manual']
+                        beat_group.add(VisualNote(self, (beat_pos * 90, 0), note, beat_pos -
+                                                  self.beat, color, stem_direction, clef_bounds, manual))
         label = CoreLabel(text="{}{}{}{}{}".format(
             "{}\n".format(beat['harmony']) if 'harmony' in beat else '',
             "|{}|\n".format(' ' * min(8, int((beat['spacing'] + 1) * 8))) if 'spacing' in beat and 'manual' in beat and 'spacing' in beat['manual'] else '',
@@ -155,11 +156,26 @@ class Staff(Widget):
 
 
 class Notehead(InstructionGroup):
-    def __init__(self, pos, r, pitch):
+    def __init__(self, pos, r, color, pitch, stem_direction, outline=False):
         super(Notehead, self).__init__()
+        if stem_direction == 'down':
+            self.add(PushMatrix())
+            self.add(Rotate(angle=180, origin=(pos[0], pos[1])))
+        self.add(Color(1, 1, 1))
+        if outline:
+            self.add(PushMatrix())
+            self.add(Scale(1.2, origin=(pos[0], pos[1])))
+        self.outline = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
+                               texture=Image('data/quarter.png').texture)
+        self.add(self.outline)
+        if outline:
+            self.add(PopMatrix())
+        self.add(Color(*color))
         self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
                                texture=Image('data/quarter.png').texture)
         self.add(self.rect)
+        if stem_direction == 'down':
+            self.add(PopMatrix())
 
     def on_update(self, dt):
         return True
@@ -169,26 +185,25 @@ class VisualNote(InstructionGroup):
     sharp_symbol = CoreLabel(text=u'\u266f', font_size=75, font_name="Code2001")
     flat_symbol = CoreLabel(text=u'\u266d', font_size=75, font_name="Code2001")
 
-    def __init__(self, staff, pos, pitch, duration, color, stem_direction):
+    def __init__(self, staff, pos, pitch, duration, color, stem_direction, clef_bounds, outline):
         super(VisualNote, self).__init__()
 
         self.staff = staff
 
         self.add(PushMatrix())
+        self.add(Translate(*pos))
 
-        # Perform translation.
         line, accidental = pitch_to_staff(pitch, staff.accidental_type)
-        self.translation = Translate(*pos)
-        self.add(self.translation)
 
         # Add ledger lines, if necessary.
         self.ledger_color = Color(1, 1, 1)
         self.add(self.ledger_color)
         lines = []
-        if line < 0:
-            lines = range(line, 0)
+        if line < clef_bounds[0]:
+            lines = range(line, clef_bounds[0])
         else:
-            lines = range(10, line + 1)
+            lines = range(clef_bounds[1], line + 1)
+        print(clef_bounds, line, lines)
         for l in lines:
             if l % 2 == 0:
                 height = l * staff.spacing
@@ -196,13 +211,10 @@ class VisualNote(InstructionGroup):
 
         self.color = Color(*color)
         self.add(self.color)
-        # The value (brightness) of the note has its own sort of attack and decay.
-        # After the note has finished, it remains on the staff, but is darkened.
-        self.color_anim = KFAnim((0, 0.5), (0.25 * duration, 1.0), (0.5 * duration, 0.6), (1.0 * duration, 0.3))
 
         # Draw the note.
         height = line * staff.spacing
-        self.notehead = Notehead((0, height), 10, pitch)
+        self.notehead = Notehead((0, height), 10, color, pitch, stem_direction, outline)
         self.add(self.notehead)
 
         if accidental > 0:
@@ -239,7 +251,8 @@ class PartSelector(BoxLayout):
             checkbox.bind(active=self.on_checkbox_toggled)
             self.checkboxes[key] = checkbox
 
-            label = LabelButton(text=name, font_size=25, halign='right', valign='middle', on_press=lambda _: checkbox._do_press())
+            label = LabelButton(text=name, font_size=25, halign='right',
+                                valign='middle', on_press=lambda _: checkbox._do_press())
             label.bind(size=label.setter('text_size'))
 
             box.add_widget(label)
@@ -263,32 +276,32 @@ class PartSelector(BoxLayout):
                 self.set_part_active(part, checkbox_active)
 
     def on_key_down(self, keycode, modifiers):
-        part = lookup(keycode[1], 'satbhdwmc', ('s', 'a', 't', 'b', 'harmony', 'dissonance', 'spacing', 'mel_rhythm', 'acc_rhythm'))
+        part = lookup(keycode[1], 'satbhdwmc', ('s', 'a', 't', 'b', 'harmony',
+                                                'dissonance', 'spacing', 'mel_rhythm', 'acc_rhythm'))
         if part:
             self.checkboxes[part]._do_press()
 
 class UI(BoxLayout):
 
-    # Associate voices with colors and stem directions.
-    voice_info = [('s', (1, 0, 0), 'up'),
-                  ('a', (1, 1, 0), 'down'),
-                  ('t', (0, 1, 0), 'up'),
-                  ('b', (0, 0, 1), 'down')]
+    # Associate voices with colors, stem directions, and clefs.
+    voice_info = [('s', (1, 0, 0), 'up', 'treble'),
+                  ('a', (1, 1, 0), 'down', 'treble'),
+                  ('t', (0, 1, 0), 'up', 'bass'),
+                  ('b', (0, 0.5, 1), 'down', 'bass')]
 
     def __init__(self, input, *args, **kwargs):
         super(UI, self).__init__(*args, orientation='horizontal', **kwargs)
 
         self.input = input
 
-        self.part_selector = PartSelector(self.set_part_active, pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
+        self.part_selector = PartSelector(self.set_part_active,
+                                          pos_hint={'center_y': 0.5}, size_hint=(.2, .5))
         self.add_widget(self.part_selector)
 
         self.staff = Staff(accidental_direction=-1, pos_hint={'center_x': 0.5}, size_hint=(.8, 1.))
         layout = RelativeLayout(pos_hint={'center_y': 0.5}, size_hint=(.8, .2))
         layout.add_widget(self.staff)
         self.add_widget(layout)
-        self.bind(pos=self.draw, size=self.draw)
-        self.draw()
 
     @property
     def selected_beat(self):
@@ -303,16 +316,6 @@ class UI(BoxLayout):
 
     def set_part_active(self, part, active):
         self.input.set_part_enabled(part, active)
-
-    def draw(self, a=None, b=None):
-        # TODO: This is sample data, remove it.
-        data = [{'s': 67, 'a': 64, 't': 60, 'b': 53},
-                {'s': 67, 'a': 62, 't': 59, 'b': 53},
-                {'s': 67, 'a': 64, 't': 60, 'b': 48}]
-        for i, beat in enumerate(data):
-            for (voice, color, stem_direction) in self.voice_info:
-                if voice in beat:
-                    pass#self.staff.add_note(i, beat[voice], color, stem_direction)
 
     def on_key_down(self, keycode, modifiers):
         self.part_selector.on_key_down(keycode, modifiers)

@@ -151,7 +151,7 @@ class Input(InstructionGroup):
                     'b': (True, -1, False, True, False, True),
                 }
 
-        beat['manual'] = copy.deepcopy(self.parts_enabled)
+        beat['manual'] = self.parts_enabled.copy()
 
         self.on_beat_update(beat)
 
