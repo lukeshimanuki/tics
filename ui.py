@@ -389,6 +389,15 @@ class UI(BoxLayout):
         layout.add_widget(self.staff)
         self.add_widget(layout)
 
+
+        new_layout = RelativeLayout(pos_hint={'center_y': 0.5}, size_hint=(.1, .1))
+        self.tempo = Label(text = "text", valign='top', font_size='20sp',
+              pos_hint={'center_y': 0.5, 'center_x': 1.0},
+              text_size=(Window.width, Window.height))
+        new_layout.add_widget(self.tempo)
+        self.add_widget(new_layout)
+        self.tempo.text = 'Tempo : %d\n' % 60
+
     @property
     def selected_beat(self):
         return self.staff.selected_beat

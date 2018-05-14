@@ -70,6 +70,7 @@ class BeatManager:
         self.sched = Scheduler(self.clock, self.tempo_map)
         self.sched.post_at_tick(480, self.on_beat)
         self.paused = False
+        self.improv = False
 
         self.synth = Synth('data/FluidR3_GM.sf2')
         self.synth.program(0, 0, 0)
@@ -102,6 +103,9 @@ class BeatManager:
         else:
             self.set_tempo(self.tempo)
             self.tempo_queue.put(self.tempo)
+
+    def toggle_improv(self):
+        self.improv = not self.improv
 
     def audio_process(self, note_queue):
         # Initialize audio
@@ -216,7 +220,10 @@ class BeatManager:
                         notes.append(note)
                         starts.append(idx)
                         lengths.append(1)
-                volume = 100 if 'manual' in next_beat and part in next_beat['manual'] else 80
+                if self.improv:
+                    volume = 0 if 'manual' in next_beat and part in next_beat['manual'] else 80 
+                else:
+                    volume = 100 if 'manual' in next_beat and part in next_beat['manual'] else 80
                 for idx, note in enumerate(notes):
                     self.note_queue.put((channel, note, volume, float(starts[idx]) / num, float(lengths[idx]) / num))
                 #self.synth.noteon(channel, next_beat[part][0], 100)
@@ -289,7 +296,7 @@ class MainWidget(BaseWidget):
             self.ui.set_accidental_type(1)
 
     def update_beat_from_input(self, beat):
-        if self.beat_manager.paused:
+        if self.beat_manager.paused or self.beat_manager.improv:
             for channel, part in enumerate('satb'):
                 if part in beat and 'manual' in beat and part in beat['manual']:
                     note = beat[part][0]
@@ -320,6 +327,8 @@ class MainWidget(BaseWidget):
             self.ui.selected_beat = min(self.ui.selected_beat + 1, self.beat_manager.PADDING - 2)
         if keycode[1] == 'p':
             self.beat_manager.toggle_pause()
+        if keycode[1] == 'i':
+            self.beat_manager.toggle_improv()
         if keycode[1] == 'r':
             if self.record_index is None:
                 self.record_index = self.beat_manager.current_beat_index + self.ui.selected_beat + 1
