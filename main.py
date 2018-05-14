@@ -64,9 +64,11 @@ class BeatManager:
 
         self.clock = Clock()
         self.last_tick = 0
-        self.tempo_map  = SimpleTempoMap(tempo)
+        self.tempo = tempo
+        self.tempo_map = SimpleTempoMap(tempo)
         self.sched = Scheduler(self.clock, self.tempo_map)
         self.sched.post_at_tick(480, self.on_beat)
+        self.paused = False
 
         self.synth = Synth('data/FluidR3_GM.sf2')
         self.synth.program(0, 0, 0)
@@ -82,6 +84,16 @@ class BeatManager:
         	audio_process = multiprocessing.Process(target=self.audio_process, args=(self.note_queue,))
         audio_process.start()
         
+    def set_tempo(self, tempo):
+        self.tempo = tempo
+        self.tempo_map.set_tempo(tempo, self.clock.get_time())
+
+    def toggle_pause(self):
+        self.paused = not self.paused
+        if self.paused:
+            self.tempo_map.set_tempo(0, self.clock.get_time())
+        else:
+            self.set_tempo(self.tempo)
 
     def audio_process(self, note_queue):
         # Initialize audio
@@ -121,6 +133,9 @@ class BeatManager:
         for channel, part in enumerate('satb'):
             preset = self.instruments[part]
             self.synth.program(channel, 0, preset)
+
+    def current_tempo(self):
+        return self.tempo_map.bpm
 
     def current_key(self):
         return self.data[self.current_beat_index]['harmony'].split('|')[1]
@@ -248,10 +263,18 @@ class MainWidget(BaseWidget):
         self.ui.on_key_down(keycode, modifiers)
         self.input.on_key_down(keycode, modifiers)
 
+        if keycode[1] == 'up':
+            tempo = self.beat_manager.current_tempo()
+            self.beat_manager.set_tempo(tempo + 10)
+        if keycode[1] == 'down':
+            tempo = self.beat_manager.current_tempo()
+            self.beat_manager.set_tempo(tempo - 10)
         if keycode[1] == 'left':
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
             self.ui.selected_beat = min(self.ui.selected_beat + 1, self.beat_manager.PADDING - 2)
+        if keycode[1] == 'p':
+            self.beat_manager.toggle_pause()
         if keycode[1] == 'r':
             if self.record_index is None:
                 self.record_index = self.beat_manager.current_beat_index + self.ui.selected_beat + 1
