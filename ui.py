@@ -390,9 +390,9 @@ class UI(BoxLayout):
         self.add_widget(layout)
 
 
-        new_layout = RelativeLayout(pos_hint={'center_y': 0.5}, size_hint=(.1, .1))
+        new_layout = RelativeLayout(pos_hint={'center_y': 0.3, 'center_x': -1.0}, size_hint=(0, .1))
         self.tempo = Label(text = "text", valign='top', font_size='20sp',
-              pos_hint={'center_y': 0.5, 'center_x': 1.0},
+              pos_hint={'center_y': 0.5},
               text_size=(Window.width, Window.height))
         new_layout.add_widget(self.tempo)
         self.add_widget(new_layout)

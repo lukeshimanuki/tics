@@ -90,7 +90,7 @@ class BeatManager:
         audio_process.start()
         
     def set_tempo(self, tempo):
-        tempo = np.clip(tempo, 0, 500)
+        tempo = np.clip(tempo, 0, 200)
         self.tempo = tempo
         self.tempo_map.set_tempo(tempo, self.clock.get_time())
         self.tempo_queue.put(tempo)
@@ -318,9 +318,11 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'up':
             tempo = self.beat_manager.current_tempo()
             self.beat_manager.set_tempo(tempo + 10)
+            self.ui.tempo.text = 'Tempo : %d\n' % self.beat_manager.tempo
         if keycode[1] == 'down':
             tempo = self.beat_manager.current_tempo()
             self.beat_manager.set_tempo(tempo - 10)
+            self.ui.tempo.text = 'Tempo : %d\n' % self.beat_manager.tempo
         if keycode[1] == 'left':
             self.ui.selected_beat = max(self.ui.selected_beat - 1, 0)
         if keycode[1] == 'right':
