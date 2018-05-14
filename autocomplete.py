@@ -13,7 +13,7 @@ def btime(i):
     #runtime[i] += time.time() - prev_time[i]
     pass
 
-config = __import__('classical')
+config = __import__('jazz')
 
 def autocomplete_config(name):
     global config

@@ -2,7 +2,7 @@ from kivy.graphics.instructions import InstructionGroup
 from common.core import *
 import copy
 
-config = __import__('classical')
+config = __import__('jazz')
 
 def input_config(name):
     global config

@@ -21,7 +21,7 @@ from input import Input, input_config
 from ui import UI
 from autocomplete import autocomplete, autocomplete_config
 
-config = __import__('classical')
+config = __import__('jazz')
 
 if len(sys.argv) >= 2:
     autocomplete_config(sys.argv[1])
@@ -89,6 +89,7 @@ class BeatManager:
         audio_process.start()
         
     def set_tempo(self, tempo):
+        tempo = np.clip(tempo, 0, 500)
         self.tempo = tempo
         self.tempo_map.set_tempo(tempo, self.clock.get_time())
         self.tempo_queue.put(tempo)
