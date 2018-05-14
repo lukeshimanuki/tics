@@ -96,6 +96,13 @@ class Staff(Widget):
         beat_group = AnimGroup()
         for (voice, color, stem_direction, clef) in UI.voice_info:
             if voice in beat:
+                reference = {'s': 77, 'a': 64, 't': 57, 'b': 43}[voice]
+                notes = [note for note in beat[voice] if note not in [None, -1]]
+                if notes:
+                    reference = notes[0]
+                if len(beat[voice]) > 2:
+                    beat_start = beat_id - self.display_history - 1
+                    beat_group.add(Tuplet(self, (beat_start * 90, 0), len(beat[voice]), reference, color))
                 for idx, note in enumerate(beat[voice]):
                     # TODO: rests, rhythmic grouping
                     if note != -1:
@@ -104,10 +111,6 @@ class Staff(Widget):
                         manual = 'manual' in beat and voice in beat['manual']
                         value = 1 if len(beat[voice]) > 1 else 2
                         if note is None:
-                            reference = {'s': 77, 'a': 64, 't': 57, 'b': 43}[voice]
-                            notes = [note for note in beat[voice] if note not in [None, -1]]
-                            if notes:
-                                reference = notes[0]
                             if idx > 0 and beat[voice][idx-1] not in [None, -1]:
                                 reference = beat[voice][idx-1]
                             elif idx + 1 < len(beat[voice]) and beat[voice][idx+1] not in [None, -1]:
@@ -166,7 +169,7 @@ class Staff(Widget):
                         obj.color.a = 1.0
                 else:
                     for obj in beat_group.objects:
-                        obj.color.a = 0.7
+                        obj.color.a = 0.5
             self.draw()
 
     def on_update(self, dt):
@@ -194,6 +197,7 @@ class Notehead(InstructionGroup):
                                texture=Image(image_src).texture)
             self.add(self.outline)
             self.add(PopMatrix())
+        self.color = color
         self.add(color)
         self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
                                texture=Image(image_src).texture)
@@ -203,7 +207,6 @@ class Notehead(InstructionGroup):
 
     def on_update(self, dt):
         self.outline_color.a = self.color.a
-        return True
 
 
 class VisualNote(InstructionGroup):
@@ -255,6 +258,9 @@ class VisualNote(InstructionGroup):
 
         self.add(PopMatrix())
 
+    def on_update(self, dt):
+        self.notehead.on_update(dt)
+
 
 class VisualRest(InstructionGroup):
     def __init__(self, staff, pos, pitch, duration, color, clef_bounds):
@@ -287,6 +293,32 @@ class VisualRest(InstructionGroup):
         self.rect = CRectangle(cpos=(0, height), csize=(2.5*8, 7*8),
                                texture=Image('data/quarter_rest.png').texture)
         self.add(self.rect)
+        self.add(PopMatrix())
+
+
+class Tuplet(InstructionGroup):
+    def __init__(self, staff, pos, number, pitch, color):
+        super(Tuplet, self).__init__()
+
+        self.staff = staff
+
+        self.add(PushMatrix())
+        self.add(Translate(*pos))
+        line, _ = pitch_to_staff(pitch, staff.accidental_type)
+
+        self.color = Color(*color)
+
+        # Draw the tuplet.
+        height = line * staff.spacing
+        self.add(self.color)
+        self.rect = CRectangle(cpos=(35, height + 80), csize=(90, 20),
+                               texture=Image('data/tuplet.png').texture)
+        self.add(self.rect)
+        num_label = CoreLabel(text=str(number), font_size=20)
+        num_label.refresh()
+        self.label = CRectangle(cpos=(35, height + 80), csize=num_label.texture.size,
+                               texture=num_label.texture)
+        self.add(self.label)
         self.add(PopMatrix())
 
 
