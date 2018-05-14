@@ -4,7 +4,7 @@ WOODWIND_QUARTET = {'s': 74, 'a': 69, 't': 72, 'b': 72} # flute, oboe, clarinet,
 SAX_QUARTET = {'s': 65, 'a': 66, 't': 67, 'b': 68} # soprano, alto, tenor, bari
 BRASS_QUARTET = {'s': 57, 'a': 57, 't': 58, 'b': 59} # 2 trumpets, trombone, tuba
 JAZZ_QUARTET = {'s': 57, 'a': 0, 't': 0, 'b': 33}
-_instruments = BRASS_QUARTET
+_instruments = PIANO
 
 _major_keys = [
     'C',
