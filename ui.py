@@ -155,11 +155,16 @@ class Staff(Widget):
 
 
 class Notehead(InstructionGroup):
-    def __init__(self, pos, r, pitch):
+    def __init__(self, pos, r, pitch, stem_direction):
         super(Notehead, self).__init__()
+        if stem_direction == 'down':
+            self.add(PushMatrix())
+            self.add(Rotate(angle=180, origin=(pos[0], pos[1])))
         self.rect = CRectangle(cpos=(pos[0], pos[1] + 2.5*r), csize=(2.5*r, 7*r),
                                texture=Image('data/quarter.png').texture)
         self.add(self.rect)
+        if stem_direction == 'down':
+            self.add(PopMatrix())
 
     def on_update(self, dt):
         return True
@@ -198,7 +203,7 @@ class VisualNote(InstructionGroup):
 
         # Draw the note.
         height = line * staff.spacing
-        self.notehead = Notehead((0, height), 10, pitch)
+        self.notehead = Notehead((0, height), 10, pitch, stem_direction)
         self.add(self.notehead)
 
         if accidental > 0:
@@ -271,7 +276,7 @@ class UI(BoxLayout):
     voice_info = [('s', (1, 0, 0), 'up', 'treble'),
                   ('a', (1, 1, 0), 'down', 'treble'),
                   ('t', (0, 1, 0), 'up', 'bass'),
-                  ('b', (0, 0, 1), 'down', 'bass')]
+                  ('b', (0, 0.5, 1), 'down', 'bass')]
 
     def __init__(self, input, *args, **kwargs):
         super(UI, self).__init__(*args, orientation='horizontal', **kwargs)
