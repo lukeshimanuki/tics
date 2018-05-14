@@ -122,7 +122,7 @@ class Staff(Widget):
         container.color = Color(1, 1, 1)
         container.add(container.color)
         beat_pos = beat_id - self.display_history - 1
-        container.add(Rectangle(pos=(beat_pos * 90 - texture_size[0] / 2, -self.spacing * 16), size=texture_size, texture=label.texture))
+        container.add(Rectangle(pos=(beat_pos * 90 - texture_size[0] / 2, -self.spacing * 27), size=texture_size, texture=label.texture))
         beat_group.add(container)
 
         self.moving_objects.add(beat_group)
