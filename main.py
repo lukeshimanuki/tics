@@ -181,7 +181,7 @@ class BeatManager:
                         notes.append(note)
                         starts.append(idx)
                         lengths.append(1)
-                volume = 100 if 'manual' in next_beat and part in next_beat['manual'] else 50
+                volume = 100 if 'manual' in next_beat and part in next_beat['manual'] else 80
                 for idx, note in enumerate(notes):
                     self.note_queue.put((channel, note, volume, float(starts[idx]) / num, float(lengths[idx]) / num))
                 #self.synth.noteon(channel, next_beat[part][0], 100)
