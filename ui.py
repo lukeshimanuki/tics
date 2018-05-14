@@ -98,10 +98,20 @@ class Staff(Widget):
                         # TODO: Make notes fade correctly, get rid of dead beat_group entries.
                         beat_group.add(VisualNote(self, (beat_pos * 90, 0),
                                                   note, beat_pos - self.beat, color, stem_direction))
-        label = CoreLabel(text="{}\n{}\n{}".format(
-            beat['harmony'] if 'harmony' in beat else '',
-            "{:.2f}".format(beat['dissonance']) if 'dissonance' in beat else '',
-            "{:.2f}".format(beat['spacing']) if 'spacing' in beat else '',
+        label = CoreLabel(text="{}{}{}{}{}".format(
+            "{}\n".format(beat['harmony']) if 'harmony' in beat else '',
+            "|{}|\n".format(' ' * min(8, int((beat['spacing'] + 1) * 8))) if 'spacing' in beat and 'manual' in beat and 'spacing' in beat['manual'] else '',
+            "{}\n".format(
+                '.-+#'[max(0, min(4, int((beat['dissonance'] + 1) * 2)))]
+            ) if 'dissonance' in beat and 'manual' in beat and 'dissonance' in beat['manual'] else '',
+            "{}\n".format(''.join(
+                'o' if t == True else '=' if t == -1 else '-'
+                for t in beat['mel_rhythm']
+            )) if 'manual' in beat and 'mel_rhythm' in beat['manual'] and 'mel_rhythm' in beat else '',
+            "{}\n".format('\n'.join(''.join(
+                '+' if t == True else '=' if t == -1 else '-'
+                for t in beat['acc_rhythm'][part]
+            ) for part in 'atb')) if 'manual' in beat and 'acc_rhythm' in beat['manual'] and 'acc_rhythm' in beat else '',
         ), font_size=25, color=(1, 1, 1, 1))
         label.refresh()
         texture = label.texture

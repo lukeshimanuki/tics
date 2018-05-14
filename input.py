@@ -144,6 +144,12 @@ class Input(InstructionGroup):
                     't': (False, True, False, True),
                     'b': (True, False, False, False),
                 }
+            if len(sorted_notes) == 6:
+                beat['acc_rhythm'] = {
+                    'a': (True,),
+                    't': (True,),
+                    'b': (True, -1, False, True, False, True),
+                }
 
         beat['manual'] = copy.deepcopy(self.parts_enabled)
 

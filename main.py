@@ -240,9 +240,11 @@ class MainWidget(BaseWidget):
 
     def update_beat_from_input(self, beat):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat
+        if 'manual' in beat and 'manual' in self.beat_manager.data[selected_beat_index]:
+            beat['manual'].update(self.beat_manager.data[selected_beat_index]['manual'])
         self.beat_manager.data[selected_beat_index].update(beat)
-        print("{}: {}".format(selected_beat_index, beat)) # [DEBUGGING]
-        self.ui.staff.add_beat(selected_beat_index, beat)
+        print("{}: {}".format(selected_beat_index, self.beat_manager.data[selected_beat_index])) # [DEBUGGING]
+        self.ui.staff.add_beat(selected_beat_index, self.beat_manager.data[selected_beat_index])
 
     def on_key_down(self, keycode, modifiers):
         self.ui.on_key_down(keycode, modifiers)
