@@ -53,7 +53,7 @@ class BeatManager:
         self.data = [{'s': (72,), 'a': (67,), 't': (64,), 'b': (60,), 'harmony': 'I|C'}, {}, {}, {}, {}, {}, {}]
 
         # Class constants
-        self.PADDING = 8
+        self.PADDING = 17
         self.MAX_AUTOCOMPLETE = 5
 
         # Class variables

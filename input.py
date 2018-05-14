@@ -29,11 +29,6 @@ class Input(InstructionGroup):
             class midiconstants:
                 NOTE_OFF = 0x80
                 NOTE_ON = 0x90
-            self.midi_in = rtmidi.MidiIn(name='TICS')
-            available_ports = self.midi_in.get_ports()
-            print(available_ports)
-            self.midi_in.open_port(1)
-            print('Opened MIDI port.')
             self.last_msg = None
             def midi_callback(msgtime, _ = None):
                 msg, time = msgtime
@@ -44,7 +39,16 @@ class Input(InstructionGroup):
                 elif msg[0] == midiconstants.NOTE_OFF and msg[0:2] != self.last_msg:
                     self.on_midi_up(msg[1])
                     self.last_msg = msg[0:2]
-            self.midi_in.set_callback(midi_callback)
+            self.midi_ins = []
+            midi_in = rtmidi.MidiIn(name='TICS')
+            available_ports = midi_in.get_ports()
+            print(available_ports)
+            for i in range(len(available_ports)):
+                midi_in = rtmidi.MidiIn(name='TICS')
+                midi_in.open_port(i)
+                print('Opened MIDI port.')
+                midi_in.set_callback(midi_callback)
+                self.midi_ins.append(midi_in)
         except Exception as e:
             print(e)
             print('MIDI support disabled.')
