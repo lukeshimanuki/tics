@@ -98,16 +98,30 @@ class Staff(Widget):
             if voice in beat:
                 for idx, note in enumerate(beat[voice]):
                     # TODO: rests, rhythmic grouping
-                    if note not in [None, -1]:
+                    if note != -1:
                         beat_pos = beat_id + idx / float(len(beat[voice])) - self.display_history - 1
                         clef_bounds = (0, 10) if clef == 'treble' else (-10, -2)
                         manual = 'manual' in beat and voice in beat['manual']
                         value = 1 if len(beat[voice]) > 1 else 2
-                        beat_group.add(VisualNote(self, (beat_pos * 90, 0),
-                                                  note, value, beat_pos -
-                                                  self.beat, color,
-                                                  stem_direction, clef_bounds,
-                                                  manual))
+                        if note is None:
+                            reference = {'s': 77, 'a': 64, 't': 57, 'b': 43}[voice]
+                            notes = [note for note in beat[voice] if note not in [None, -1]]
+                            if notes:
+                                reference = notes[0]
+                            if idx > 0 and beat[voice][idx-1] not in [None, -1]:
+                                reference = beat[voice][idx-1]
+                            elif idx + 1 < len(beat[voice]) and beat[voice][idx+1] not in [None, -1]:
+                                reference = beat[voice][idx+1]
+                            beat_group.add(VisualRest(self, (beat_pos * 90, 0),
+                                                      reference, beat_pos -
+                                                      self.beat, color,
+                                                      clef_bounds))
+                        else:
+                            beat_group.add(VisualNote(self, (beat_pos * 90, 0),
+                                                      note, value, beat_pos -
+                                                      self.beat, color,
+                                                      stem_direction, clef_bounds,
+                                                      manual))
         label = CoreLabel(text="{}{}{}{}{}".format(
             "{}\n".format(beat['harmony']) if 'harmony' in beat else '',
             "|{}|\n".format(' ' * min(8, int((beat['spacing'] + 1) * 8))) if 'spacing' in beat and 'manual' in beat and 'spacing' in beat['manual'] else '',
@@ -241,8 +255,39 @@ class VisualNote(InstructionGroup):
 
         self.add(PopMatrix())
 
-        self.time = 0
-        self.start = 0
+
+class VisualRest(InstructionGroup):
+    def __init__(self, staff, pos, pitch, duration, color, clef_bounds):
+        super(VisualRest, self).__init__()
+
+        self.staff = staff
+
+        self.add(PushMatrix())
+        self.add(Translate(*pos))
+        line, _ = pitch_to_staff(pitch, staff.accidental_type)
+
+        # Add ledger lines, if necessary.
+        self.ledger_color = Color(1, 1, 1)
+        self.add(self.ledger_color)
+        lines = []
+        if line < clef_bounds[0]:
+            lines = range(line, clef_bounds[0])
+        else:
+            lines = range(clef_bounds[1], line + 1)
+        for l in lines:
+            if l % 2 == 0:
+                height = l * staff.spacing
+                self.add(Line(points=(-25, height, 25, height)))
+
+        self.color = Color(*color)
+
+        # Draw the rest.
+        height = line * staff.spacing
+        self.add(self.color)
+        self.rect = CRectangle(cpos=(0, height), csize=(2.5*8, 7*8),
+                               texture=Image('data/quarter_rest.png').texture)
+        self.add(self.rect)
+        self.add(PopMatrix())
 
 
 class LabelButton(ButtonBehavior, Label):
