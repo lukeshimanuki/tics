@@ -86,7 +86,6 @@ class BeatManager:
     def audio_process(self, note_queue):
         # Initialize audio
         audio = Audio(2)
-
         sched = AudioScheduler(self.tempo_map)
 
         # Connect scheduler into audio system
@@ -122,6 +121,9 @@ class BeatManager:
         for channel, part in enumerate('satb'):
             preset = self.instruments[part]
             self.synth.program(channel, 0, preset)
+
+    def current_key(self):
+        return self.data[self.current_beat_index]['harmony'].split('|')[1]
 
     def beat_is_filled(self, beat_index):
         for key in ['s', 'a', 't', 'b', 'harmony']:
@@ -229,6 +231,12 @@ class MainWidget(BaseWidget):
         self.input.reset()
         self.draw_beats_on_staff()
         self.ui.on_beat(self.beat_manager.current_beat_index)
+
+        FLAT_KEYS = ['F', 'Bb', 'Eb', 'Ab', 'd', 'g', 'c', 'f']
+        if self.beat_manager.current_key() in FLAT_KEYS:
+            self.ui.set_accidental_type(-1)
+        else:
+            self.ui.set_accidental_type(1)
 
     def update_beat_from_input(self, beat):
         selected_beat_index = self.beat_manager.current_beat_index + 1 + self.ui.selected_beat
