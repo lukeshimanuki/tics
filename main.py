@@ -293,6 +293,24 @@ class MainWidget(BaseWidget):
                     recorded['manual'] = set()
                 manual = {
                     key: recorded[key]
+                    for key in recorded
+                }
+                existing.update(manual)
+                existing['manual'].update(recorded['manual'])
+                self.ui.staff.add_beat(self.beat_manager.current_beat_index + self.ui.selected_beat + 1 + i, existing)
+
+        if keycode[1] == 'e':
+            data = pickle.load(open('recording.pickle', 'r'))
+            self.beat_manager.data += [{} for i in range(
+                self.beat_manager.current_beat_index + self.ui.selected_beat + 1 + len(data) - len(self.beat_manager.data)
+            )]
+            for i, (existing, recorded) in enumerate(zip(self.beat_manager.data[self.beat_manager.current_beat_index + self.ui.selected_beat + 1:], data)):
+                if 'manual' not in existing:
+                    existing['manual'] = set()
+                if 'manual' not in recorded:
+                    recorded['manual'] = set()
+                manual = {
+                    key: recorded[key]
                     for key in recorded['manual']
                 }
                 existing.update(manual)
