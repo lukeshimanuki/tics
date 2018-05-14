@@ -53,6 +53,9 @@ class Staff(Widget):
         self._selected_beat = selected_beat
         self.beat_highlighter.cpos = (470 + selected_beat * 90, self.beat_highlighter.cpos[1])
 
+    def set_accidental_type(self, accidental_type):
+        self.accidental_type = accidental_type
+
     def draw(self, a=None, b=None):
         self.objects.clear()
         self.spacing = self.size[1] / 10.0
@@ -281,6 +284,9 @@ class UI(BoxLayout):
     @selected_beat.setter
     def selected_beat(self, selected_beat):
         self.staff.selected_beat = selected_beat
+
+    def set_accidental_type(self, accidental_type):
+        self.staff.set_accidental_type(accidental_type)
 
     def set_part_active(self, part, active):
         self.input.set_part_enabled(part, active)
